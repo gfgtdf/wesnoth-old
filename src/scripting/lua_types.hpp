@@ -10,10 +10,10 @@
 
    See the COPYING file for more details.
 */
-
+#include "lua/lua.h"
 typedef void* luatypekey;
 
-// i dont want to cast to void* each time ....
+// We dont want to cast to void* each time ....
 // a drawback is, that these are now normal static variables wich are initialised at initialisation time (so you shoudn't use these at/before initialisation time).
 extern luatypekey const dlgclbkKey;
 extern luatypekey const executeKey;
@@ -26,3 +26,10 @@ extern luatypekey const tstringKey;
 extern luatypekey const unitvarKey;
 extern luatypekey const ustatusKey;
 extern luatypekey const vconfigKey;
+
+void register_lua_tstring(lua_State *L);
+void register_lua_vconfig(lua_State *L);
+void register_lua_gettext(lua_State *L);
+void register_lua_getside(lua_State *L);
+
+

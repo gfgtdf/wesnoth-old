@@ -134,20 +134,6 @@ namespace {
 }//unnamed namespace for queued_event_context
 
 
-/**
- * Creates a t_string object (__call metamethod).
- * - Arg 1: userdata containing the domain.
- * - Arg 2: string to translate.
- * - Ret 1: string containing the translatable string.
- */
-static int impl_gettext(lua_State *L)
-{
-	char const *m = luaL_checkstring(L, 2);
-	char const *d = static_cast<char *>(lua_touserdata(L, 1));
-	// Hidden metamethod, so d has to be a string. Use it to create a t_string.
-	luaW_pushtstring(L, t_string(m, d));
-	return 1;
-}
 
 /**
  * Creates an interface for gettext
@@ -168,167 +154,7 @@ static int intf_textdomain(lua_State *L)
 	return 1;
 }
 
-/**
- * Converts a Lua value at position @a src and appends it to @a dst.
- * @note This function is private to lua_tstring_concat. It expects two things.
- *       First, the t_string metatable is at the top of the stack on entry. (It
- *       is still there on exit.) Second, the caller hasn't any valuable object
- *       with dynamic lifetime, since they would be leaked on error.
- */
-static void tstring_concat_aux(lua_State *L, t_string &dst, int src)
-{
-	switch (lua_type(L, src)) {
-		case LUA_TNUMBER:
-		case LUA_TSTRING:
-			dst += lua_tostring(L, src);
-			break;
-		case LUA_TUSERDATA:
-			// Compare its metatable with t_string's metatable.
-			if (!lua_getmetatable(L, src) || !lua_rawequal(L, -1, -2))
-				luaL_typerror(L, src, "string");
-			dst += *static_cast<t_string *>(lua_touserdata(L, src));
-			lua_pop(L, 1);
-			break;
-		default:
-			luaL_typerror(L, src, "string");
-	}
-}
 
-/**
- * Appends a scalar to a t_string object (__concat metamethod).
- */
-static int impl_tstring_concat(lua_State *L)
-{
-	// Create a new t_string.
-	t_string *t = new(lua_newuserdata(L, sizeof(t_string))) t_string;
-
-	lua_pushlightuserdata(L
-			, tstringKey);
-
-	lua_rawget(L, LUA_REGISTRYINDEX);
-
-	// Append both arguments to t.
-	tstring_concat_aux(L, *t, 1);
-	tstring_concat_aux(L, *t, 2);
-
-	lua_setmetatable(L, -2);
-	return 1;
-}
-
-/**
- * Destroys a t_string object before it is collected (__gc metamethod).
- */
-static int impl_tstring_collect(lua_State *L)
-{
-	t_string *t = static_cast<t_string *>(lua_touserdata(L, 1));
-	t->t_string::~t_string();
-	return 0;
-}
-
-/**
- * Converts a t_string object to a string (__tostring metamethod);
- * that is, performs a translation.
- */
-static int impl_tstring_tostring(lua_State *L)
-{
-	t_string *t = static_cast<t_string *>(lua_touserdata(L, 1));
-	lua_pushstring(L, t->c_str());
-	return 1;
-}
-
-/**
- * Gets the parsed field of a vconfig object (_index metamethod).
- * Special fields __literal, __shallow_literal, __parsed, and
- * __shallow_parsed, return Lua tables.
- */
-static int impl_vconfig_get(lua_State *L)
-{
-	vconfig *v = static_cast<vconfig *>(lua_touserdata(L, 1));
-
-	if (lua_isnumber(L, 2))
-	{
-		vconfig::all_children_iterator i = v->ordered_begin();
-		unsigned len = std::distance(i, v->ordered_end());
-		unsigned pos = lua_tointeger(L, 2) - 1;
-		if (pos >= len) return 0;
-		std::advance(i, pos);
-		lua_createtable(L, 2, 0);
-		lua_pushstring(L, i.get_key().c_str());
-		lua_rawseti(L, -2, 1);
-		new(lua_newuserdata(L, sizeof(vconfig))) vconfig(i.get_child());
-		lua_pushlightuserdata(L
-				, vconfigKey);
-
-		lua_rawget(L, LUA_REGISTRYINDEX);
-		lua_setmetatable(L, -2);
-		lua_rawseti(L, -2, 2);
-		return 1;
-	}
-
-	char const *m = luaL_checkstring(L, 2);
-	if (strcmp(m, "__literal") == 0) {
-		luaW_pushconfig(L, v->get_config());
-		return 1;
-	}
-	if (strcmp(m, "__parsed") == 0) {
-		luaW_pushconfig(L, v->get_parsed_config());
-		return 1;
-	}
-
-	bool shallow_literal = strcmp(m, "__shallow_literal") == 0;
-	if (shallow_literal || strcmp(m, "__shallow_parsed") == 0)
-	{
-		lua_newtable(L);
-		BOOST_FOREACH(const config::attribute &a, v->get_config().attribute_range()) {
-			if (shallow_literal)
-				luaW_pushscalar(L, a.second);
-			else
-				luaW_pushscalar(L, v->expand(a.first));
-			lua_setfield(L, -2, a.first.c_str());
-		}
-		vconfig::all_children_iterator i = v->ordered_begin(),
-			i_end = v->ordered_end();
-		if (shallow_literal) {
-			i.disable_insertion();
-			i_end.disable_insertion();
-		}
-		for (int j = 1; i != i_end; ++i, ++j)
-		{
-			lua_createtable(L, 2, 0);
-			lua_pushstring(L, i.get_key().c_str());
-			lua_rawseti(L, -2, 1);
-			luaW_pushvconfig(L, i.get_child());
-			lua_rawseti(L, -2, 2);
-			lua_rawseti(L, -2, j);
-		}
-		return 1;
-	}
-
-	if (v->null() || !v->has_attribute(m)) return 0;
-	luaW_pushscalar(L, (*v)[m]);
-	return 1;
-}
-
-/**
- * Returns the number of a child of a vconfig object.
- */
-static int impl_vconfig_size(lua_State *L)
-{
-	vconfig *v = static_cast<vconfig *>(lua_touserdata(L, 1));
-	lua_pushinteger(L, v->null() ? 0 :
-		std::distance(v->ordered_begin(), v->ordered_end()));
-	return 1;
-}
-
-/**
- * Destroys a vconfig object before it is collected (__gc metamethod).
- */
-static int impl_vconfig_collect(lua_State *L)
-{
-	vconfig *v = static_cast<vconfig *>(lua_touserdata(L, 1));
-	v->vconfig::~vconfig();
-	return 0;
-}
 
 #define return_tstring_attrib(name, accessor) \
 	if (strcmp(m, name) == 0) { \
@@ -3565,6 +3391,39 @@ static int impl_theme_items_set(lua_State *L)
 }
 
 
+/**
+	pushes the game_config table on the stack.
+*/
+static bool luaW_push_game_config(lua_State *L)
+{	
+	lua_newuserdata(L, 0);
+	lua_createtable(L, 0, 3);
+	lua_pushcfunction(L, impl_game_config_get);
+	lua_setfield(L, -2, "__index");
+	lua_pushcfunction(L, impl_game_config_set);
+	lua_setfield(L, -2, "__newindex");
+	lua_pushstring(L, "game config");
+	lua_setfield(L, -2, "__metatable");
+	lua_setmetatable(L, -2);
+	return true;
+}
+
+/**
+	pushes the current table on the stack.
+*/
+static bool luaW_push_current(lua_State *L)
+{	
+	lua_newuserdata(L, 0);
+	lua_createtable(L, 0, 2);
+	lua_pushcfunction(L, impl_current_get);
+	lua_setfield(L, -2, "__index");
+	lua_pushstring(L, "current config");
+	lua_setfield(L, -2, "__metatable");
+	lua_setmetatable(L, -2);
+	return true;
+}
+
+
 LuaKernel::LuaKernel(const config &cfg)
 	: mState(luaL_newstate()), level_(cfg)
 {
@@ -3680,16 +3539,11 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_pushstring(L, "side");
 	lua_setfield(L, -2, "__metatable");
 	lua_rawset(L, LUA_REGISTRYINDEX);
-
+	
+	// Create the tstring metatable.
+	register_lua_tstring(L);
 	// Create the gettext metatable.
-	lua_pushlightuserdata(L
-			, gettextKey);
-	lua_createtable(L, 0, 2);
-	lua_pushcfunction(L, impl_gettext);
-	lua_setfield(L, -2, "__call");
-	lua_pushstring(L, "message domain");
-	lua_setfield(L, -2, "__metatable");
-	lua_rawset(L, LUA_REGISTRYINDEX);
+	register_lua_gettext(L);
 
 	// Create the gettype metatable.
 	lua_pushlightuserdata(L
@@ -3727,20 +3581,6 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_setfield(L, -2, "__metatable");
 	lua_rawset(L, LUA_REGISTRYINDEX);
 
-	// Create the tstring metatable.
-	lua_pushlightuserdata(L
-			, tstringKey);
-	lua_createtable(L, 0, 4);
-	lua_pushcfunction(L, impl_tstring_concat);
-	lua_setfield(L, -2, "__concat");
-	lua_pushcfunction(L, impl_tstring_collect);
-	lua_setfield(L, -2, "__gc");
-	lua_pushcfunction(L, impl_tstring_tostring);
-	lua_setfield(L, -2, "__tostring");
-	lua_pushstring(L, "translatable string");
-	lua_setfield(L, -2, "__metatable");
-	lua_rawset(L, LUA_REGISTRYINDEX);
-
 	// Create the unit status metatable.
 	lua_pushlightuserdata(L
 			, ustatusKey);
@@ -3766,19 +3606,7 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_rawset(L, LUA_REGISTRYINDEX);
 
 	// Create the vconfig metatable.
-	lua_pushlightuserdata(L
-			, vconfigKey);
-	lua_createtable(L, 0, 4);
-	lua_pushcfunction(L, impl_vconfig_collect);
-	lua_setfield(L, -2, "__gc");
-	lua_pushcfunction(L, impl_vconfig_get);
-	lua_setfield(L, -2, "__index");
-	lua_pushcfunction(L, impl_vconfig_size);
-	lua_setfield(L, -2, "__len");
-	lua_pushstring(L, "wml object");
-	lua_setfield(L, -2, "__metatable");
-	lua_rawset(L, LUA_REGISTRYINDEX);
-
+	register_lua_vconfig(L);
 	// Create the ai elements table.
 	ai::lua_ai_context::init(L);
 
@@ -3789,7 +3617,11 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_setglobal(L, "loadfile");
 
 	// Create the game_config variable with its metatable.
+	
+	
 	lua_getglobal(L, "wesnoth");
+	luaW_push_game_config(L);
+	/*
 	lua_newuserdata(L, 0);
 	lua_createtable(L, 0, 3);
 	lua_pushcfunction(L, impl_game_config_get);
@@ -3798,12 +3630,14 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_setfield(L, -2, "__newindex");
 	lua_pushstring(L, "game config");
 	lua_setfield(L, -2, "__metatable");
-	lua_setmetatable(L, -2);
+	lua_setmetatable(L, -2);*/
 	lua_setfield(L, -2, "game_config");
 	lua_pop(L, 1);
 
 	// Create the current variable with its metatable.
 	lua_getglobal(L, "wesnoth");
+	luaW_push_current(L);
+	/*
 	lua_newuserdata(L, 0);
 	lua_createtable(L, 0, 2);
 	lua_pushcfunction(L, impl_current_get);
@@ -3811,6 +3645,7 @@ LuaKernel::LuaKernel(const config &cfg)
 	lua_pushstring(L, "current config");
 	lua_setfield(L, -2, "__metatable");
 	lua_setmetatable(L, -2);
+	*/
 	lua_setfield(L, -2, "current");
 	lua_pop(L, 1);
 
