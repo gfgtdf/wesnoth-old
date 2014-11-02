@@ -296,7 +296,7 @@ void wait::join_game(bool observe)
 				side_num = nb_sides;
 				break;
 			}
-			if (sd["controller"] == "network" && sd["player_id"].empty())
+			if (sd["controller"] == "human" && sd["player_id"].empty())
 			{
 				if (!side_choice) { // found the first empty side
 					side_choice = &sd;
@@ -465,7 +465,6 @@ void wait::process_network_data(const config& data, const network::connection so
 		LOG_NW << "received change controller" << std::endl;
 		LOG_RG << "multiplayer_wait: [change_controller]" << std::endl;
 		LOG_RG << data.debug() << std::endl;
-		//const int side = lexical_cast<int>(change["side"]);
 
 		if (config & sidetochange = get_scenario().find_child("side", "side", change["side"])) {
 			LOG_RG << "found side : " << sidetochange.debug() << std::endl;
@@ -508,7 +507,7 @@ static std::string generate_user_description(const config& side)
 	else if(owner.empty()) {
 		return _("(Vacant slot)");
 	}
-	else if (controller_type == "human" || controller_type == "network") {
+	else if (controller_type == "human") {
 		return owner;
 	}
 	else {

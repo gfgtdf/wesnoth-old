@@ -504,7 +504,7 @@ void saved_game::cancel_orders()
 		// for humans "goto_x/y" is used for multi-turn-moves
 		// for the ai "goto_x/y" is a way for wml to order the ai to move a unit to a certain place.
 		// we want to cancel human order but not to break wml.
-		if (side["controller"] != "human" && side["controller"] != "network") continue;
+		if (side["controller"] != "human") continue;
 		BOOST_FOREACH(config &unit, side.child_range("unit"))
 		{
 			unit["goto_x"] = -999;
@@ -517,9 +517,6 @@ void saved_game::unify_controllers()
 {
 	BOOST_FOREACH(config &side, this->starting_pos_.child_range("side"))
 	{
-		if (side["controller"] == "network")
-			side["controller"] = "human";
-		if (side["controller"] == "network_ai")
-			side["controller"] = "ai";
+		side.remove_attribute("is_networked");
 	}
 }

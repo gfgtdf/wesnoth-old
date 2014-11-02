@@ -45,7 +45,7 @@ static lg::log_domain log_network("network");
 namespace {
 
 const std::string controller_names[] = {
-	"network",
+	"human",
 	"human",
 	"ai",
 	"null",
@@ -855,18 +855,10 @@ side_engine::side_engine(const config& cfg, connect_engine& parent_engine,
 	update_controller_options();
 
 	// Tweak the controllers.
-	if (cfg_["controller"] == "network_ai" ||
-		(parent_.state_.classification().campaign_type == game_classification::SCENARIO && cfg_["controller"].blank())) 
+	if (parent_.state_.classification().campaign_type == game_classification::SCENARIO && cfg_["controller"].blank())
 	{
 		cfg_["controller"] = "ai";
 	}
-	//this is a workaround for bug #21797
-	if(cfg_["controller"] == "network" &&  !allow_player_ && parent_.params_.saved_game)
-	{	
-		WRN_MP << "Found a side controlled by a network player with allow_player=no" << std::endl;
-		cfg_["controller"] = "ai";
-	}
-
 	if (cfg_["controller"] == "null") {
 		set_controller(CNTR_EMPTY);
 	} else if (cfg_["controller"] == "ai") {
@@ -931,6 +923,10 @@ std::string side_engine::user_description() const
 
 config side_engine::new_config() const
 {
+	assert(controller_ != CNTR_LAST);
+	assert(controller_ != CNTR_EMPTY || player_id_.empty());
+	assert(!preferences::login().empty());
+
 	config res = cfg_;
 
 	// Save default "recruit" so that correct faction lists would be
@@ -956,14 +952,6 @@ config side_engine::new_config() const
 		res["side"] = index_ + 1;
 	}
 	
-	res["controller"] = controller_names[controller_];
-	if(player_id_ == preferences::login() && res["controller"] == "network") {
-		// the hosts rveices the serversided controller wteaks after the start event, but 
-		// for my sync it's very important that the controller types are correct 
-		// during the start/prestart event (otherwse random unit creation during prestart fails).
-		res["controller"] = "human";
-	}
-	
 	std::string desc = user_description();
 	if(!desc.empty()) {
 		res["user_description"] = t_string(desc, "wesnoth");
@@ -980,7 +968,6 @@ config side_engine::new_config() const
 		res["name"] = desc;
 	} 
 
-	assert(controller_ != CNTR_LAST);
 	if(controller_ == CNTR_COMPUTER && allow_player_) {
 		// Do not import default ai cfg otherwise - all is set by scenario config.
 		res.add_child("ai", ai::configuration::get_ai_config_for(ai_algorithm_));
@@ -996,7 +983,6 @@ config side_engine::new_config() const
 	// that always the host for Local players and AIs
 	// any always empty for free/reserved sides or null controlled sides.
 	// especialy you can use !res["player_id"].empty() to check whether a side is already taken.
-	assert(!preferences::login().empty());
 	if(controller_ == CNTR_LOCAL) {
 		res["player_id"] = preferences::login();
 		res["current_player"] = preferences::login();
@@ -1012,6 +998,8 @@ config side_engine::new_config() const
 		res["current_player"] = player_id_;
 	}
 
+	res["controller"] = controller_names[controller_];
+	res["is_networked"] = res["player_id"] !=  preferences::login();
 	res["allow_changes"] = allow_changes_;
 	res["chose_random"] = chose_random_;
 

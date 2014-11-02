@@ -245,7 +245,7 @@ private:
 	 * change and a subsequent update_side_data() call makes it actually
 	 * happen.
 	 * First we look for a side where save_id= or current_player= matches the
-	 * new user's name then we search for the first controller="network" side.
+	 * new user's name then we search for the first controller="human" side.
 	 */
 	bool take_side(const player_map::const_iterator user);
 

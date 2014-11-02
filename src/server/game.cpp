@@ -183,41 +183,46 @@ void game::perform_controller_tweaks() {
 
 	for(simple_wml::node::child_list::const_iterator s = sides.begin(); s != sides.end(); ++s) {
 		nsides_++;
-		if ((**s)["controller"] != "null") {
-			const size_t side_index = (**s)["side"].to_int() - 1;
-			if(side_index >= sides_.size()) {
-				continue;
-			}
-			if (sides_[side_index] == 0) {
-				sides_[side_index] = owner_;
-				std::stringstream msg;
-				msg << "Side "  << side_index + 1 << " had no controller during controller tweaks! The host was assigned control.";
-				LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
-				send_and_record_server_message(msg.str());
-			}
+		const simple_wml::string_span& controller = (**s)["controller"];
+		const size_t side_index = (**s)["side"].to_int() - 1;
 
-			const player_map::const_iterator user = player_info_->find(sides_[side_index]);
-			std::string user_name = "null (server missing user)";
-			if (user == player_info_->end()) {
-				missing_user(user->first, __func__);
-			} else {
-				user_name = username(user);
-			}
+		if (controller == "null") {
+			//dont tweak null controlled sides.
+			continue;
+		}
+		if(side_index >= sides_.size()) {
+			//invalid side number, skip
+			continue;
+		}
+		if(controller != "ai" && controller != "human") {
+			//invalid controller type, assume human.
+			(**s).set_attr("controller", "human");
+		}
 
-			change_controller(side_index, sides_[side_index], user_name , false, (**s)["controller"].to_string());
+		if (sides_[side_index] == 0) {
+			sides_[side_index] = owner_;
+			std::stringstream msg;
+			msg << "Side "  << side_index + 1 << " had no controller during controller tweaks! The host was assigned control.";
+			LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
+			send_and_record_server_message(msg.str());
+		}
 
-			//next lines change controller types found in level_ to be what is appropriate for an observer at game start.
-			if ((**s)["controller"] == "ai") {
-				(*s)->set_attr("controller", "network_ai");
-			} else {	//this catches "reserved" also
-				(*s)->set_attr("controller", "network");
-			}
+		const player_map::const_iterator user = player_info_->find(sides_[side_index]);
+		std::string user_name = "null (server missing user)";
+		if (user == player_info_->end()) {
+			missing_user(user->first, __func__);
+		} else {
+			user_name = username(user);
+		}
+		change_controller(side_index, sides_[side_index], user_name , false, controller.to_string());
 
-			if (sides_[side_index] == 0) {
-				std::stringstream msg;
-				msg << "Side " << side_index + 1 << " had no controller AFTER controller tweaks! Ruh Roh!";
-				LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
-			}
+		//next line changes controller types found in level_ to be what is appropriate for an observer at game start.
+		(**s).set_attr("is_networked", "yes");
+
+		if (sides_[side_index] == 0) {
+			std::stringstream msg;
+			msg << "Side " << side_index + 1 << " had no controller AFTER controller tweaks! Ruh Roh!";
+			LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
 		}
 	}
 
@@ -331,7 +336,7 @@ bool game::take_side(const player_map::const_iterator user)
 	// Check if we can figure out a fitting side.
 	const simple_wml::node::child_list& sides = get_sides_list();
 	for(simple_wml::node::child_list::const_iterator side = sides.begin(); side != sides.end(); ++side) {
-		if(((**side)["controller"] == "network" || (**side)["controller"] == "reserved")
+		if(((**side)["controller"] == "human" || (**side)["controller"] == "reserved")
 				&& (**side)["current_player"] == user->second.name().c_str())
 		{
 			if (send_taken_side(cfg, side)) return true;
@@ -339,7 +344,7 @@ bool game::take_side(const player_map::const_iterator user)
 	}
 	// If there was no fitting side just take the first available.
 	for(simple_wml::node::child_list::const_iterator side = sides.begin(); side != sides.end(); ++side) {
-		if((**side)["controller"] == "network") {
+		if((**side)["controller"] == "human") {
 			if (send_taken_side(cfg, side)) return true;
 		}
 	}
@@ -395,19 +400,16 @@ void game::update_side_data() {
 			const simple_wml::string_span& player_id = (**side)["player_id"];
 			const simple_wml::string_span& controller = (**side)["controller"];
 			if ( player_id == info->second.name().c_str()) {
-				//if this is called before perform_controller_tweaks() we have "ai" and "human" controllers
-				//if its called after that we have "network" and "network_ai" controllers.
-				if(controller != "network" && controller != "human" && controller != "ai" && controller != "network_ai") {
+				if(controller != "human" && controller != "ai") {
 					//we found invalid [side] data. Some message would be cool.
 					continue;
 				}
-				//convert "network_ai" -> "ai", "network" -> "human"
-				side_controllers_[side_index] = controller == "network" ? "human" : controller == "network_ai" ? "ai" : controller.to_string();
+				side_controllers_[side_index] = controller.to_string();
 				sides_[side_index] = *user;
 				side_found = true;
 			}
 			else if (*user == owner_ && (controller == "null" || controller == "reserved")) {
-				//the *user == owner_ check has no effect, 
+				//the *user == owner_ check has no effect,
 				//it's just an optimisation so that we only do this once.
 				side_controllers_[side_index] = controller.to_string();
 			}
@@ -554,24 +556,20 @@ void game::change_controller(const size_t side_index,
 	change.set_attr("player", player_name.c_str());
 
 	// Tell everyone but the new player that this side's controller changed.
-	change.set_attr("controller", (side_controllers_[side_index] == "ai" ? "network_ai" : "network"));
+	change.set_attr("controller", side_controllers_[side_index].c_str());
+	change.set_attr("is_networked", "true");
 
 	send_data(response, sock);
 	if (started_) { //this is added instead of the if (started_) {...} below
-		simple_wml::document *record = new simple_wml::document;
-		simple_wml::node& recchg = record->root().add_child("change_controller");
-		recchg.set_attr_dup("side", side.c_str());
-		recchg.set_attr_dup("player", player_name.c_str());
-		recchg.set_attr_dup("controller", (side_controllers_[side_index] == "ai" ? "network_ai" : "network"));
-
-		record_data(record); //the purpose of these records is so that observers, replay viewers, get controller updates correctly
+		record_data(response.clone());
+		//the purpose of these records is so that observers, replay viewers, get controller updates correctly
 	}
 
 	// Tell the new player that he controls this side now.
 	// Just don't send it when the player left the game. (The host gets the
 	// side_drop already.)
 	if (!player_left) {
-		change.set_attr("controller", (side_controllers_[side_index] == "ai" ? "ai" : "human"));
+		change.set_attr("is_networked", "false");
 		wesnothd::send_to_one(response, sock);
 	}
 }
@@ -1277,7 +1275,7 @@ void game::load_next_scenario(const player_map::const_iterator user) {
 	simple_wml::node & next_scen = cfg_scenario.root().add_child("next_scenario");
 	level_.root().copy_into(next_scen);
 
-	const simple_wml::node::child_list & sides =  starting_pos(next_scen)->children("side");
+	const simple_wml::node::child_list & sides = starting_pos(next_scen)->children("side");
 
 	DBG_GAME << "****\n loading next scenario for a client. sides info = " << std::endl;
 	DBG_GAME << debug_sides_info() << std::endl;
@@ -1286,6 +1284,7 @@ void game::load_next_scenario(const player_map::const_iterator user) {
 	for(simple_wml::node::child_list::const_iterator s = sides.begin(); s != sides.end(); ++s) {
 		if ((**s)["controller"] != "null") {
 			const size_t side_index = (**s)["side"].to_int() - 1;
+			const std::string& controller = side_controllers_[side_index];
 			if(side_index >= sides_.size()) {
 				LOG_GAME << "found an invalid side number (" << side_index - 1 << ")\n";
 			}
@@ -1295,28 +1294,15 @@ void game::load_next_scenario(const player_map::const_iterator user) {
 				msg << "Side "  << side_index + 1 << " had no controller while a client was loading next scenario! The host was assigned control.";
 				LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
 				send_and_record_server_message(msg.str());
-			} else if (sides_[side_index] == user->first) {
-				if (side_controllers_[side_index] == "human") {
-					(*s)->set_attr("controller", "human");
-				} else if (side_controllers_[side_index] == "ai") {
-					(*s)->set_attr("controller", "ai");
-				} else {
-					std::stringstream msg;
-					msg << "Side " << side_index + 1 << " had unexpected side_controller = " << side_controllers_[side_index] << " on server side.";
-					LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
-					send_and_record_server_message(msg.str());
-				}
-			} else {
-				if (side_controllers_[side_index] == "human") {
-					(*s)->set_attr("controller", "network");
-				} else if (side_controllers_[side_index] == "ai") {
-					(*s)->set_attr("controller", "network_ai");
-				} else {
-					std::stringstream msg;
-					msg << "Side " << side_index + 1 << " had unexpected side_controller = " << side_controllers_[side_index] << " on server side.";
-					LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
-					send_and_record_server_message(msg.str());
-				}
+			}
+			else if (controller != "human" && controller != "ai") {
+				std::stringstream msg;
+				msg << "Side " << side_index + 1 << " had unexpected side_controller = " << controller << " on server side.";
+				LOG_GAME << msg.str() << " (game id: " << id_ << ")\n";
+				send_and_record_server_message(msg.str());
+			}
+			else {
+				(*s)->set_attr_dup("is_networked", sides_[side_index] == user->first ? "no" : "yes");
 			}
 		}
 	}
