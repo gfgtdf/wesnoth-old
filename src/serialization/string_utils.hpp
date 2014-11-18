@@ -16,6 +16,8 @@
 #ifndef SERIALIZATION_STRING_UTILS_HPP_INCLUDED
 #define SERIALIZATION_STRING_UTILS_HPP_INCLUDED
 
+#include "unicode_types.hpp"
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -321,8 +323,7 @@ typedef std::map< std::string, t_string > string_map;
  * Functions for converting Unicode wide-char strings to UTF-8 encoded strings,
  * back and forth.
  */
-class invalid_utf8_exception : public std::exception {
-};
+typedef utf8::invalid_utf8_exception invalid_utf8_exception;
 
 class utf8_iterator
 {
