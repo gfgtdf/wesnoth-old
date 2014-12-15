@@ -1,6 +1,6 @@
 language: objective-c
 before_install:
-- git fetch --tags
+- git fetch --tags --depth=50 --branch=deploy-os-x
 - export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig:$PKG_CONFIG_PATH
 - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 - env
