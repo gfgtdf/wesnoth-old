@@ -1,13 +1,16 @@
 language: objective-c
 before_install:
+- export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig:$PKG_CONFIG_PATH
+- export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+- env
+
 - brew update
-- brew install pkg-config
 - brew tap homebrew/games
 - brew install wesnoth --only-dependencies --verbose -j2
 - env
 script:
 #- brew install wesnoth --HEAD --verbose -j2
-- scons wesnoth OS_ENV=true -j2 nls=false
+- scons wesnoth OS_ENV=true -j2 nls=false gettextdir=`brew --prefix gettext`
 deploy:
   provider: releases
   api_key:
