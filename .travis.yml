@@ -19,6 +19,7 @@ deploy:
   api_key:
     secure: Yc7R24d1IUd/ymiR9TabjY0S73SFZdaifIXA/I1cavXeSd+HHgfuHvkjZhotgmOs2XMNwIwuGK/qGgMRw2VyFsVjLswVrMJPAwscL02rz7Nn/opdMAj1tsAsh2IdFrzmB/AlbtsbClXPqdwla/8PWcBmvDriDMTFXoWFD/gPA84=
   file: wesnoth
+  skip_cleanup: true
   on:
     repo: cbeck88/wesnoth
     tags: true
