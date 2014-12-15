@@ -1,0 +1,9 @@
+language: objective-c
+#wesnoth is not objective-c but this is an easy way to get the OS X build environment, we will only use homebrew anyways
+
+before_install:
+ - brew update
+ - brew tap homebrew/games
+script:
+ - brew install wesnoth --HEAD --verbose -j2
+
