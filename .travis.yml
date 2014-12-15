@@ -25,3 +25,15 @@ deploy:
     repo: cbeck88/wesnoth
     tags: true
     all_branches: true
+
+notifications:
+    email: false
+    irc:
+        channels:
+            - "chat.freenode.net#wesnoth-dev"
+        template:
+            - "\x02%{repository}\x0f#\x0312%{build_number}\x0f (\x0307%{branch}\x0f - \x02%{commit}\x0f : \x0303%{author}\x0f): \x02%{message}\x0f"
+            - "Build details : \x0302%{build_url}\x0f"
+	    - "Tag: \x0302https://github.com/cbeck88/wesnoth/releases/tag/os-x-nightly\x0f"
+        on_success: always
+        on_failure: always
