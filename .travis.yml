@@ -2,8 +2,10 @@ language: objective-c
 before_install:
 - brew update
 - brew tap homebrew/games
+- brew install wesnoth --only-dependencies --verbose -j2
 script:
-- brew install wesnoth --HEAD --verbose -j2
+#- brew install wesnoth --HEAD --verbose -j2
+- scons wesnoth OS_ENV=true -j2 nls=false
 deploy:
   provider: releases
   api_key:
