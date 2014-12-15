@@ -12,6 +12,7 @@ before_install:
 script:
 #- brew install wesnoth --HEAD --verbose -j2
 - scons wesnoth OS_ENV=true -j2 nls=false gettextdir=`brew --prefix gettext`
+- ls
 
 deploy:
   provider: releases
