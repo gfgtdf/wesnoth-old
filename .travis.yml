@@ -1,7 +1,5 @@
 language: objective-c
 before_install:
-- git tag -a -f -m "OS X nightly deployment" os-x-nightly
-
 - export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig:$PKG_CONFIG_PATH
 - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 - env
