@@ -18,4 +18,5 @@ deploy:
   file: wesnoth
   on:
     repo: cbeck88/wesnoth
-    branch: deploy-os-x
+#    branch: deploy-os-x
+    all_branches: true
