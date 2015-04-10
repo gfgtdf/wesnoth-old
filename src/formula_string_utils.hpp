@@ -19,7 +19,7 @@
 #include "serialization/string_utils.hpp"
 
 class variable_set;
-
+class lua_kernel_base;
 namespace utils {
 
 /**
@@ -41,7 +41,7 @@ inline bool might_contain_variables(const std::string &str)
  * is NULL, then game event variables will be used instead.
  */
 std::string interpolate_variables_into_string(const std::string &str, const string_map * const symbols);
-std::string interpolate_variables_into_string(const std::string &str, const variable_set& variables);
+std::string interpolate_variables_into_string(const std::string &str, const variable_set& variables, lua_kernel_base* lua_kernel = NULL);
 
 /**
  * Function that does the same as the above, for t_stringS.
@@ -49,7 +49,7 @@ std::string interpolate_variables_into_string(const std::string &str, const vari
  * function, rather than at use. This limitation is due to the use of
  * create-time interpolation, rather than use-time.
  */
-t_string interpolate_variables_into_tstring(const t_string &str, const variable_set& variables);
+t_string interpolate_variables_into_tstring(const t_string &str, const variable_set& variables, lua_kernel_base* lua_kernel = NULL);
 
 }
 

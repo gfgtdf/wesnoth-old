@@ -22,6 +22,7 @@
 #include "resources.hpp"
 #include "tooltips.hpp"
 #include "formula_string_utils.hpp"
+#include "scripting/game_lua_kernel.hpp"  //for resources::lua_kernel* -> lua_kernel_base* cast
 
 #include <boost/foreach.hpp>
 
@@ -348,9 +349,9 @@ void terrain_label::read(const config &cfg)
 	visible_in_shroud_ = cfg["visible_in_shroud"].to_bool();
 	immutable_ = cfg["immutable"].to_bool(true);
 
-	text_ = utils::interpolate_variables_into_tstring(text_, vs); // Not moved to rendering, as that would depend on variables at render-time
-	team_name_ = utils::interpolate_variables_into_string(team_name_, vs);
-	tmp_color = utils::interpolate_variables_into_string(tmp_color, vs);
+	text_ = utils::interpolate_variables_into_tstring(text_, vs, resources::lua_kernel); // Not moved to rendering, as that would depend on variables at render-time
+	team_name_ = utils::interpolate_variables_into_string(team_name_, vs, resources::lua_kernel);
+	tmp_color = utils::interpolate_variables_into_string(tmp_color, vs, resources::lua_kernel);
 
 	if(!tmp_color.empty()) {
 		std::vector<Uint32> temp_rgb;

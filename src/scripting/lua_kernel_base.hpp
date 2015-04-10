@@ -55,7 +55,9 @@ public:
 	typedef boost::function<void(char const*, char const*)> error_handler;
 
 	void set_video(CVideo * ptr) { video_ = ptr; }
-
+	
+	std::string eval_string(std::string exp);
+	
 	template<typename T>
 	static T& get_lua_kernel(lua_State *L)
 	{

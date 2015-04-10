@@ -627,3 +627,24 @@ boost::uint32_t lua_kernel_base::get_random_seed()
 {
 	return seed_rng::next_seed();
 }
+
+std::string lua_kernel_base::eval_string(std::string exp)
+{
+	exp = "return (" + exp + ")";
+	int top = lua_gettop (this->mState);
+	std::string res;
+	try {
+		
+		error_handler eh = boost::bind(&lua_kernel_base::throw_exception, this, _1, _2 );
+		load_string(exp.c_str(), eh);
+		protected_call(0, 1, eh);
+		if(lua_isstring(this->mState, top + 1)) {
+			res = lua_tostring(this->mState, top + 1);
+		}
+	}
+	catch (game::lua_error & e) {
+		lua_kernel_base::log_error(e.what(), "In function lua_kernel::run()");
+	}
+	lua_settop(this->mState, top);
+	return res;
+}

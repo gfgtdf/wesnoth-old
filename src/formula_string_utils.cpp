@@ -19,6 +19,7 @@
 #include "log.hpp"
 #include "formula.hpp"
 #include "gettext.hpp"
+#include "scripting/lua_kernel_base.hpp"
 
 static lg::log_domain log_engine("engine");
 #define ERR_NG LOG_STREAM(err, log_engine)
@@ -46,7 +47,7 @@ private:
 };
 }
 
-static std::string do_interpolation(const std::string &str, const variable_set& set)
+static std::string do_interpolation(const std::string &str, const variable_set& set, lua_kernel_base* lua_kernel = NULL)
 {
 	std::string res = str;
 	// This needs to be able to store negative numbers to check for the while's condition
@@ -124,6 +125,45 @@ static std::string do_interpolation(const std::string &str, const variable_set& 
 			}
 			continue;
 		}
+		else if(*var_name_begin == 'L' && (var_name_begin + 1) != res.end() && *(var_name_begin + 1) == '(') {
+			// The $( ... ) syntax invokes a formula
+			int paren_nesting_level = 0;
+			bool in_string = false;
+			++var_end;
+			do {
+				switch(*var_end) {
+				case '(':
+					if(!in_string) {
+						++paren_nesting_level;
+					}
+					break;
+				case ')':
+					if(!in_string) {
+						--paren_nesting_level;
+					}
+					break;
+				case '\'':
+					in_string = !in_string;
+					break;
+				// TODO: support escape sequences when/if they are allowed in FormulaAI strings
+				}
+			} while(++var_end != res.end() && paren_nesting_level > 0);
+			if(paren_nesting_level > 0) {
+				ERR_NG << "Lua in WML string cannot be evaluated due to "
+					<< "a missing closing parenthesis:\n\t--> \""
+					<< std::string(var_begin, var_end) << "\"\n";
+				res.replace(var_begin, var_end, "");
+				continue;
+			}
+			if(lua_kernel) {
+				res.replace(var_begin, var_end, lua_kernel->eval_string(std::string(var_begin+3, var_end-1)));
+			}
+			else {
+				ERR_NG << "Lua in WML string cannot be evaluated in this conext";
+				res.replace(var_begin, var_end, "");
+			}
+			continue;
+		}
 
 		// Find the maximum extent of the variable name (it may be shortened later).
 		for(int bracket_nesting_level = 0; var_end != res.end(); ++var_end) {
@@ -197,15 +237,15 @@ std::string interpolate_variables_into_string(const std::string &str, const stri
 	return do_interpolation(str, set);
 }
 
-std::string interpolate_variables_into_string(const std::string &str, const variable_set& variables)
+std::string interpolate_variables_into_string(const std::string &str, const variable_set& variables, lua_kernel_base* lua_kernel)
 {
-	return do_interpolation(str, variables);
+	return do_interpolation(str, variables, lua_kernel);
 }
 
-t_string interpolate_variables_into_tstring(const t_string &tstr, const variable_set& variables)
+t_string interpolate_variables_into_tstring(const t_string &tstr, const variable_set& variables, lua_kernel_base* lua_kernel)
 {
 	if(!tstr.str().empty()) {
-		std::string interp = utils::interpolate_variables_into_string(tstr.str(), variables);
+		std::string interp = utils::interpolate_variables_into_string(tstr.str(), variables, lua_kernel);
 		if(tstr.str() != interp) {
 			return t_string(interp);
 		}

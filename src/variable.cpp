@@ -31,6 +31,7 @@
 #include "unit.hpp"
 #include "unit_map.hpp"
 #include "team.hpp"
+#include "scripting/game_lua_kernel.hpp"  //for resources::lua_kernel* -> lua_kernel_base* cast
 
 #include <boost/foreach.hpp>
 #include <boost/variant/static_visitor.hpp>
@@ -265,11 +266,11 @@ namespace {
 		template<typename T> void operator()(T const &) const {}
 		void operator()(const std::string &s) const
 		{
-			result = utils::interpolate_variables_into_string(s, *(resources::gamedata));
+			result = utils::interpolate_variables_into_string(s, *(resources::gamedata), resources::lua_kernel);
 		}
 		void operator()(const t_string &s) const
 		{
-			result = utils::interpolate_variables_into_tstring(s, *(resources::gamedata));
+			result = utils::interpolate_variables_into_tstring(s, *(resources::gamedata), resources::lua_kernel);
 		}
 	};
 }//unnamed namespace
