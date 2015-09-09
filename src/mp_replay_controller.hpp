@@ -16,6 +16,7 @@
 #include "global.hpp"
 #include "play_controller.hpp"
 #include "replay.hpp"
+#include "mouse_handler_base.hpp" //events::command_disabler
 
 #include <vector>
 
@@ -75,5 +76,6 @@ private:
 	}
 	boost::scoped_ptr<replay_stop_condition> stop_condition_;
 	play_controller& controller_;
+	events::command_disabler disabler_;
 };
 

@@ -112,6 +112,7 @@ namespace
 mp_replay_controller::mp_replay_controller(play_controller& controller)
 	: controller_(controller)
 	, stop_condition_(new replay_stop_condition())
+	, disabler_()
 {
 	controller_.get_display().get_theme().theme_reset_event().attach_handler(this);
 	controller_.get_display().redraw_everything();
