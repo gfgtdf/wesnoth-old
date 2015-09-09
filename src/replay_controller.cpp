@@ -523,7 +523,6 @@ bool replay_controller::recorder_at_end() {
 
 void replay_controller::play_side_impl()
 {
-	update_teams();
 	stop_condition_->new_side_turn(current_side(), gamestate().tod_manager_.turn());
 	while(true)
 	{
@@ -548,4 +547,10 @@ void replay_controller::play_side_impl()
 		}
 		
 	}
+}
+
+void replay_controller::update_viewing_player()
+{
+	update_gui_to_player(vision_ == HUMAN_TEAM ? gamestate().first_human_team_ : current_side() - 1, vision_ == SHOW_ALL);
+
 }
