@@ -149,6 +149,20 @@ static lg::log_domain log_scripting_lua("scripting/lua");
 std::vector<config> game_lua_kernel::preload_scripts;
 config game_lua_kernel::preload_config;
 
+struct map_locker
+{
+	map_locker(game_lua_kernel* kernel) : kernel_(kernel)
+	{
+		++kernel_->map_locked_;
+	}
+	~map_locker()
+	{
+		--kernel_->map_locked_;
+	}
+	game_lua_kernel* kernel_;
+};
+
+
 void game_lua_kernel::extract_preload_scripts(config const &game_config)
 {
 	game_lua_kernel::preload_scripts.clear();
@@ -2293,6 +2307,9 @@ int game_lua_kernel::intf_print(lua_State *L) {
  */
 int game_lua_kernel::intf_put_unit(lua_State *L)
 {
+	if(map_locked_) {
+		return luaL_error(L, "Attempted to move a unit while the map is locked");
+	}
 	int unit_arg = 1;
 	int fire_event_arg = 4;
 
@@ -2380,6 +2397,9 @@ int game_lua_kernel::intf_put_unit(lua_State *L)
  */
 int game_lua_kernel::intf_erase_unit(lua_State *L)
 {
+	if(map_locked_) {
+		return luaL_error(L, "Attempted to remove a unit while the map is locked");
+	}
 	map_location loc;
 
 	if (lua_isnumber(L, 1)) {
@@ -2428,6 +2448,9 @@ int game_lua_kernel::intf_erase_unit(lua_State *L)
  */
 int game_lua_kernel::intf_put_recall_unit(lua_State *L)
 {
+	if(map_locked_) {
+		return luaL_error(L, "Attempted to move a unit while the map is locked");
+	}
 	lua_unit *lu = NULL;
 	unit_ptr u = unit_ptr();
 	int side = lua_tointeger(L, 2);
@@ -2468,6 +2491,9 @@ int game_lua_kernel::intf_put_recall_unit(lua_State *L)
  */
 int game_lua_kernel::intf_extract_unit(lua_State *L)
 {
+	if(map_locked_) {
+		return luaL_error(L, "Attempted to remove a unit while the map is locked");
+	}
 	if (!luaW_hasmetatable(L, 1, getunitKey))
 		return luaL_typerror(L, 1, "unit");
 	lua_unit *lu = static_cast<lua_unit *>(lua_touserdata(L, 1));
@@ -4167,6 +4193,7 @@ game_lua_kernel::game_lua_kernel(CVideo * video, game_state & gs, play_controlle
 	, reports_(reports_object)
 	, level_lua_()
 	, queued_events_()
+	, map_locked_(0)
 {
 	static game_events::queued_event default_queued_event("_from_lua", map_location(), map_location(), config());
 	queued_events_.push(&default_queued_event);
@@ -4749,7 +4776,7 @@ bool game_lua_kernel::run_wml_conditional(std::string const &cmd, vconfig const 
 bool game_lua_kernel::run_filter(char const *name, unit const &u)
 {
 	lua_State *L = mState;
-
+	map_locker(this);
 	unit_map::const_unit_iterator ui = units().find(u.get_location());
 	if (!ui.valid()) return false;
 
@@ -4782,6 +4809,7 @@ void game_lua_kernel::apply_effect(const std::string& name, unit& u, const confi
 	if (!luaW_getglobal(L, "wesnoth", "effects", name.c_str(), NULL)) {
 		return;
 	}
+	map_locker(this);
 	// Stack: effect_func
 	lua_unit* lu = luaW_pushlocalunit(L, u);
 	// Stack: effect_func, unit
