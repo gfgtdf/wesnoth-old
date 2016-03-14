@@ -200,7 +200,7 @@ void gamemap::read(const std::string& data, const bool allow_invalid, int border
 		// Add to the starting position array
 		max_stating_pos = std::max<int>(max_stating_pos, pair.first);
 	}
-	starting_positions_.resize(max_stating_pos - 1);
+	starting_positions_.resize(max_stating_pos);
 	FOREACH(const AUTO& pair, starting_positions) {
 		starting_positions_[pair.first - 1] =  map_location(pair.second.x - border_size_, pair.second.y - border_size_);
 	}
@@ -482,7 +482,7 @@ void gamemap::set_starting_position(int side, const map_location& loc)
 	if(index < 0) {
 		return;
 	}
-	if(index >= starting_positions_.size()) {
+	if(index >= int(starting_positions_.size())) {
 		starting_positions_.resize(index + 1);
 	}
 	starting_positions_[index] = loc;
