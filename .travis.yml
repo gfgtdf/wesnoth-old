@@ -14,7 +14,7 @@ services:
     - docker
 
 before_install:
-    - docker build -t wesnoth_cpp14 -f utils/travis/dockerfile.txt src/etc
+    - docker build -t wesnoth_cpp14 -f utils/travis/dockerfile.txt utils/travis
 #    - export TARGETS="wesnoth wesnothd campaignd test"
 #    - export EXTRA_FLAGS_RELEASE=""
 #
