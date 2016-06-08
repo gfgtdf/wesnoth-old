@@ -1,0 +1,23 @@
+FROM ubuntu:xenial
+
+# curl
+#   Download stage0, see src/bootstrap/bootstrap.py
+# g++
+#   Compile LLVM binding in src/rustllvm
+# git
+#   Get commit hash and commit date in version string
+# make
+#   Run build scripts in mk
+# libedit-dev zlib1g-dev
+#   LLVM dependencies as packaged in Ubuntu
+#   (They are optional, but Ubuntu package enables them)
+# llvm-3.7-dev (installed by llvm-3.7-tools)
+#   LLVM
+# llvm-3.7-tools
+#   FileCheck is used to run tests in src/test/codegen
+
+RUN apt-get -y update 
+RUN apt-get -y install curl gcc g++ git make libedit-dev zlib1g-dev
+RUN apt-get -y install -qq libboost-filesystem-dev libboost-iostreams-dev libboost-random-dev libboost-program-options-dev libboost-regex-dev libboost-system-dev libboost-test-dev libboost-locale-dev libboost-thread-dev libcairo2-dev libfribidi-dev libpango1.0-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev libsdl-ttf2.0-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-net-dev libsdl2-ttf-dev gdb moreutils scons xvfb cmake
+RUN mkdir /build
+WORKDIR /build
