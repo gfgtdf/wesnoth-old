@@ -29,4 +29,3 @@ install:
 script:
     - docker run -v `pwd`:/build wesnoth_cpp14
       scons cxxtool=g++-5 --debug=time build=release extra_flags_config=-pipe extra_flags_release="$EXTRA_FLAGS_RELEASE" strict=false $TARGETS cxx_std=$CXXSTD nls=$NLS jobs=2;
-		
