@@ -125,6 +125,7 @@ void game_data::clear_variable(const std::string& varname)
 
 void game_data::write_snapshot(config& cfg) const
 {
+	cfg["next_scenario"] = next_scenario_;
 	cfg["id"] = id_;
 	cfg["theme"] = theme_;
 	cfg["defeat_music"] = utils::join(defeat_music_);
