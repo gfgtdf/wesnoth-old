@@ -299,6 +299,12 @@ inline unsigned int count_leading_ones(N n) {
 	return count_leading_zeros<N>(~n);
 }
 
+inline int gcd(int a, int b) {
+	return b == 0 ?  a : gcd(b, a % b);
+}
+
+
+
 #if 1
 typedef int32_t fixed_t;
 # define fxp_shift 8

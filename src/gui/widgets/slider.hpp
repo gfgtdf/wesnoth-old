@@ -16,7 +16,7 @@
 #define GUI_WIDGETS_SLIDER_HPP_INCLUDED
 
 #include "gui/widgets/integer_selector.hpp"
-#include "gui/widgets/scrollbar.hpp"
+#include "gui/widgets/slider_base.hpp"
 
 #include "gui/core/widget_definition.hpp"
 #include "gui/core/window_builder.hpp"
@@ -27,7 +27,7 @@ namespace gui2
 // ------------ WIDGET -----------{
 
 /** A slider. */
-class slider : public scrollbar_base, public integer_selector
+class slider : public slider_base, public integer_selector
 {
 public:
 	slider();
@@ -42,16 +42,13 @@ public:
 	/***** ***** ***** ***** Inherited ***** ***** ***** *****/
 
 	/** Inherited from integer_selector. */
-	void set_value(const int value) override;
+	void set_value(int value) override;
 
 	/** Inherited from integer_selector. */
 	int get_value() const override
 	{
-		return minimum_value_ + get_item_position() * get_step_size();
+		return minimum_value_ + get_slider_position() * get_step_size();
 	}
-
-	/** Inherited from integer_selector. */
-	void set_minimum_value(const int minimum_value) override;
 
 	/** Inherited from integer_selector. */
 	int get_minimum_value() const override
@@ -60,14 +57,25 @@ public:
 	}
 
 	/** Inherited from integer_selector. */
-	void set_maximum_value(const int maximum_value) override;
-
-	/** Inherited from integer_selector. */
 	int get_maximum_value() const override
 	// The number of items needs to include the begin and end so count - 1.
 	{
 		return minimum_value_ + get_item_count() - 1;
 	}
+
+	int get_item_count() const
+	{
+		assert(step_size_ != 0);
+		return slider_get_item_count() * step_size_;
+	}
+
+	unsigned get_step_size() const
+	{
+		return step_size_;
+	}
+
+	void set_step_size(int step_size);
+
 	typedef std::function<t_string(int /*current position*/, int /*num positions*/)> tlabel_creator;
 	/***** ***** ***** setters / getters for members ***** ****** *****/
 
@@ -76,6 +84,8 @@ public:
 		best_slider_length_ = length;
 		set_is_dirty(true);
 	}
+
+	void set_value_range(int min_value, int max_value);
 
 	void set_minimum_value_label(const t_string& minimum_value_label)
 	{
@@ -118,6 +128,7 @@ private:
 	 * The current value is minimum + item_position_.
 	 */
 	int minimum_value_;
+	int step_size_;
 
 	/** Inherited from tscrollbar. */
 	unsigned get_length() const override
@@ -126,10 +137,7 @@ private:
 	}
 
 	/** Inherited from tscrollbar. */
-	unsigned minimum_positioner_length() const override;
-
-	/** Inherited from tscrollbar. */
-	unsigned maximum_positioner_length() const override;
+	int positioner_length() const override;
 
 	/** Inherited from tscrollbar. */
 	unsigned offset_before() const override;
@@ -221,8 +229,7 @@ struct slider_definition : public styled_widget_definition
 	{
 		explicit resolution(const config& cfg);
 
-		unsigned minimum_positioner_length;
-		unsigned maximum_positioner_length;
+		unsigned positioner_length;
 
 		unsigned left_offset;
 		unsigned right_offset;

@@ -22,6 +22,7 @@
 #include "gui/core/register_widget.hpp"
 #include "gui/widgets/settings.hpp"
 #include "sound.hpp"
+#include "utils/math.hpp"
 #include "gettext.hpp"
 #include "wml_exception.hpp"
 
@@ -38,7 +39,7 @@ namespace gui2
 REGISTER_WIDGET(slider)
 
 slider::slider()
-	: scrollbar_base()
+	: slider_base()
 	, best_slider_length_(0)
 	, minimum_value_(0)
 	, minimum_value_label_()
@@ -77,69 +78,24 @@ point slider::calculate_best_size() const
 	return result;
 }
 
-void slider::set_value(const int value)
+void slider::set_value(int value)
 {
-	if(value == get_value()) {
+	value = utils::clamp(value, minimum_value_, get_maximum_value());
+	int old_value = get_value();
+
+	if(value == old_value) {
 		return;
 	}
 
-	if(value < minimum_value_) {
-		set_value(minimum_value_);
-	} else if(value > get_maximum_value()) {
-		set_value(get_maximum_value());
-	} else {
-		set_item_position(value - minimum_value_);
-	}
+	set_slider_position(value / step_size_ - minimum_value_);
 
 	fire(event::NOTIFY_MODIFIED, *this, nullptr);
-}
-
-void slider::set_minimum_value(const int minimum_value)
-{
-	if(minimum_value == minimum_value_) {
-		return;
-	}
-
-	/** @todo maybe make it a VALIDATE. */
-	assert(minimum_value <= get_maximum_value());
-
-	const int value = get_value();
-	const int maximum_value = get_maximum_value();
-	minimum_value_ = minimum_value;
-
-	// The number of items needs to include the begin and end so distance step
-	// size.
-	set_item_count(maximum_value - minimum_value_ + get_step_size());
-
-	if(value < minimum_value_) {
-		set_item_position(0);
-	}
-}
-
-void slider::set_maximum_value(const int maximum_value)
-{
-	if(maximum_value == get_maximum_value()) {
-		return;
-	}
-
-	/** @todo maybe make it a VALIDATE. */
-	assert(minimum_value_ <= maximum_value);
-
-	const int value = get_value();
-
-	// The number of items needs to include the begin and end so distance + step
-	// size.
-	set_item_count(maximum_value - minimum_value_ + get_step_size());
-
-	if(value > maximum_value) {
-		set_item_position(get_maximum_value());
-	}
 }
 
 t_string slider::get_value_label() const
 {
 	if(value_labels_) {
-		return value_labels_(get_item_position(), get_item_count());
+		return value_labels_(get_slider_position(), get_item_count());
 	} else if(!minimum_value_label_.empty() && get_value()
 											   == get_minimum_value()) {
 		return minimum_value_label_;
@@ -156,22 +112,13 @@ void slider::child_callback_positioner_moved()
 	sound::play_UI_sound(settings::sound_slider_adjust);
 }
 
-unsigned slider::minimum_positioner_length() const
+int slider::positioner_length() const
 {
 	std::shared_ptr<const slider_definition::resolution>
 	conf = std::static_pointer_cast<const slider_definition::resolution>(
 			config());
 	assert(conf);
-	return conf->minimum_positioner_length;
-}
-
-unsigned slider::maximum_positioner_length() const
-{
-	std::shared_ptr<const slider_definition::resolution>
-	conf = std::static_pointer_cast<const slider_definition::resolution>(
-			config());
-	assert(conf);
-	return conf->maximum_positioner_length;
+	return conf->positioner_length;
 }
 
 unsigned slider::offset_before() const
@@ -226,44 +173,11 @@ bool slider::in_orthogonal_range(const point& coordinate) const
 	return static_cast<size_t>(coordinate.x) < (get_width() - offset_after());
 }
 
-/*void slider::update_current_item_mouse_position()
-{
-	point mouse = get_mouse_position();
-	mouse.x -= get_x();
-	mouse.y -= get_y();
-
-	current_item_mouse_position_ = mouse;
-}*/
-
-/* TODO: this is designed to allow the slider to snap to value on drag. However, it lags behind the
- * mouse cursor too much and seems to cause problems with certain slider values. Will have to look
- * into this further.
- */
-/*void slider::move_positioner(const int)
-{
-	const int distance_from_last_item = get_length_difference(current_item_mouse_position_, get_mouse_position_last_move());
-
-	if(std::abs(distance_from_last_item) >= get_pixels_per_step()) {
-		const int steps_traveled = distance_from_last_item / get_pixels_per_step();
-		set_item_position(get_item_position() + steps_traveled);
-
-		update_current_item_mouse_position();
-
-		child_callback_positioner_moved();
-
-		fire(event::NOTIFY_MODIFIED, *this, nullptr);
-
-		// positioner_moved_notifier_.notify();
-
-		update_canvas();
-	}
-}*/
-
 void slider::update_canvas()
 {
 
 	// Inherited.
-	scrollbar_base::update_canvas();
+	slider_base::update_canvas();
 
 	for(auto & tmp : get_canvases())
 	{
@@ -283,7 +197,7 @@ void slider::handle_key_decrease(bool& handled)
 
 	handled = true;
 
-	scroll(scrollbar_base::ITEM_BACKWARDS);
+	scroll(slider_base::ITEM_BACKWARDS);
 }
 
 void slider::handle_key_increase(bool& handled)
@@ -292,7 +206,7 @@ void slider::handle_key_increase(bool& handled)
 
 	handled = true;
 
-	scroll(scrollbar_base::ITEM_FORWARD);
+	scroll(slider_base::ITEM_FORWARD);
 }
 
 void slider::signal_handler_sdl_key_down(const event::ui_event event,
@@ -341,6 +255,40 @@ void slider::set_value_labels(const std::vector<t_string>& value_labels)
 {
 	//dont use std::ref becasue we want to store value_labels in the cloasure.
 	set_value_labels(std::bind(&default_value_label_generator, value_labels, _1, _2));
+}
+
+
+void slider::set_value_range(int min_value, int max_value)
+{
+	// Settng both at once instead of having multiple functions set_min(),
+	// set_max() ... fixes an old problem where in cases like
+	//   set_min(-10);set_min(-1);
+	// min and max would tmporarily have invalid values where since the starting max value is 0;
+
+	VALIDATE(min_value <= max_value, "invalid slider data");
+	if (min_value == minimum_value_ && max_value == get_maximum_value()) {
+		return;
+	}
+
+	int diff = max_value - min_value;
+	int old_value = get_value();
+
+	step_size_ = gcd(diff, step_size_);
+	minimum_value_ = min_value;
+
+	slider_set_item_count(diff / step_size_);
+	set_value(old_value);
+
+}
+
+void slider::set_step_size(int step_size)
+{
+	const int nitems = get_item_count();
+	const int old_value = get_value();
+
+	step_size_ = gcd(nitems, step_size);
+	slider_set_item_count(nitems / step_size_);
+	set_value(old_value);
 }
 
 // }---------- DEFINITION ---------{
@@ -402,12 +350,11 @@ slider_definition::slider_definition(const config& cfg)
  */
 slider_definition::resolution::resolution(const config& cfg)
 	: resolution_definition(cfg)
-	, minimum_positioner_length(cfg["minimum_positioner_length"])
-	, maximum_positioner_length(cfg["maximum_positioner_length"])
+	, positioner_length(cfg["minimum_positioner_length"])
 	, left_offset(cfg["left_offset"])
 	, right_offset(cfg["right_offset"])
 {
-	VALIDATE(minimum_positioner_length,
+	VALIDATE(positioner_length,
 			 missing_mandatory_wml_key("resolution",
 									   "minimum_positioner_length"));
 
@@ -503,13 +450,12 @@ widget* builder_slider::build() const
 	init_control(widget);
 
 	widget->set_best_slider_length(best_slider_length_);
-	widget->set_maximum_value(maximum_value_);
-	widget->set_minimum_value(minimum_value_);
+	widget->set_value_range(maximum_value_, minimum_value_);
 	widget->set_step_size(step_size_);
 	widget->set_value(value_);
 
 	if(!value_labels_.empty()) {
-		VALIDATE(value_labels_.size() == widget->get_item_count(),
+		VALIDATE(value_labels_.size() == static_cast<size_t>(widget->get_item_count()),
 				 _("The number of value_labels and values don't match."));
 
 		widget->set_value_labels(value_labels_);
