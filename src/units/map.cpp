@@ -39,7 +39,7 @@ unit_map::unit_map(const unit_map& that)
 	, lmap_()
 {
 	for (const_unit_iterator i = that.begin(); i != that.end(); ++i) {
-		add(i->get_location(), *i);
+		//add(i->get_location(), *i);
 	}
 }
 
