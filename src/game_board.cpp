@@ -376,14 +376,14 @@ temporary_unit_placer::temporary_unit_placer(unit_map& m, const map_location& lo
 	: m_(m), loc_(loc), temp_(m_.extract(loc))
 {
 	u.clone();
-	m_.add(loc, u);
+	//m_.add(loc, u);
 }
 
 temporary_unit_placer::temporary_unit_placer(game_board& b, const map_location& loc, unit& u)
 	: m_(b.units_), loc_(loc), temp_(m_.extract(loc))
 {
 	u.clone();
-	m_.add(loc, u);
+	//m_.add(loc, u);
 }
 
 temporary_unit_placer::~temporary_unit_placer()
