@@ -43,7 +43,7 @@ editor_action* editor_action_unit::perform(map_context& mc) const
 
 void editor_action_unit::perform_without_undo(map_context& mc) const
 {
-	mc.get_units().add(loc_,u_);
+	//mc.get_units().add(loc_,u_);
 	mc.get_units().find(loc_)->set_location(loc_);
 	mc.add_changed_location(loc_);
 }
