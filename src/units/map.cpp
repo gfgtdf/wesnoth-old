@@ -66,7 +66,7 @@ unit_map::umap::iterator unit_map::begin_core() const {
 	while (i != umap_.end() && (!i->second.unit)) { ++i; }
 	return i;
 }
-
+/*
 std::pair<unit_map::unit_iterator, bool> unit_map::add(const map_location &l, const unit &u) {
 	self_check();
 	unit_ptr p = unit_ptr (new unit(u)); //TODO: should this instead take a shared pointer to a unit, rather than make a copy?
@@ -75,7 +75,7 @@ std::pair<unit_map::unit_iterator, bool> unit_map::add(const map_location &l, co
 	if(res.second == false) { p.reset(); }
 	return res;
 }
-
+*/
 std::pair<unit_map::unit_iterator, bool> unit_map::move(const map_location &src, const map_location &dst) {
 	self_check();
 	DBG_NG << "Unit map: Moving unit from " << src << " to " << dst << "\n";
@@ -203,7 +203,7 @@ std::pair<unit_map::unit_iterator, bool> unit_map::insert(unit_ptr p) {
 	self_check();
 	return std::make_pair( make_unit_iterator( uinsert.first ), true);
 }
-
+/*
 std::pair<unit_map::unit_iterator, bool> unit_map::replace(const map_location &l, const unit &u) {
 	self_check();
 	//when 'l' is the reference to map_location that is part
@@ -214,7 +214,7 @@ std::pair<unit_map::unit_iterator, bool> unit_map::replace(const map_location &l
 	erase(loc);
 	return add(loc, u);
 }
-
+*/
 size_t unit_map::num_iters() const  {
 	///Add up number of extant iterators
 	size_t num_iters(0);

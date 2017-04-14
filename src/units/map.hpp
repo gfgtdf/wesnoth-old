@@ -324,7 +324,7 @@ public:
 	 success than it is to verify that the location is empty, insert the unit check the
 	 location for the unit.
 	 */
-	std::pair<unit_iterator, bool> add(const map_location &l, const unit &u);
+	//std::pair<unit_iterator, bool> add(const map_location &l, const unit &u);
 
 	/**
 	 * Adds the unit to the map.
@@ -354,7 +354,7 @@ public:
 	 @return std::pair<unit_iterator, bool>  a bool indicating success and
 	 an iterator pointing to the new unit, or the unit already occupying location.
 	 */
-	std::pair<unit_iterator, bool> replace(const map_location &l, const unit &u);
+	//std::pair<unit_iterator, bool> replace(const map_location &l, const unit &u);
 
 	/**
 	 * Erases the unit at location @a l, if any.
