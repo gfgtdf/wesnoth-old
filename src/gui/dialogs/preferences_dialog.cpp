@@ -608,7 +608,7 @@ void preferences_dialog::post_build(window& window)
 				setter_widget->set_definition("minimal");
 				setter_widget->set_id("setter");
 				// Maximum must be set first or this will assert
-				setter_widget->set_value_range(option["max"].to_int(), option["min"].to_int());
+				setter_widget->set_value_range(option["min"].to_int(), option["max"].to_int());
 				setter_widget->set_step_size(
 					option["step"].empty() ? 1 : option["step"].to_int());
 
