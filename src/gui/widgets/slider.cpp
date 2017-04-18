@@ -450,7 +450,7 @@ widget* builder_slider::build() const
 	init_control(widget);
 
 	widget->set_best_slider_length(best_slider_length_);
-	widget->set_value_range(maximum_value_, minimum_value_);
+	widget->set_value_range(minimum_value_, maximum_value_);
 	widget->set_step_size(step_size_);
 	widget->set_value(value_);
 
