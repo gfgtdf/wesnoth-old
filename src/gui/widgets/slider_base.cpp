@@ -183,7 +183,7 @@ void slider_base::recalculate()
 
 }
 
-void slider_base::move_positioner(const int distance)
+void slider_base::move_positioner(int distance)
 {
 	int new_position = item_position_;
 	int new_positioner_offset = positioner_offset_;
@@ -195,7 +195,7 @@ void slider_base::move_positioner(const int distance)
 		new_positioner_offset = offset_before() + (available_length() - positioner_length_) * item_count_ / new_position;
 	}
 	else {
-		// smooth dragging.
+		// continious dragging. todo: fix this case and add a bool snap_ field in [slider]
 		if (distance < 0 && -distance > static_cast<int>(positioner_offset_)) {
 			new_positioner_offset = 0;
 		}
