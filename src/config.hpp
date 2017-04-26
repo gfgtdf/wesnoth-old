@@ -69,6 +69,7 @@
 #endif
 
 #ifdef USE_HETEROGENOUS_LOOKUPS
+#error yafasgadjrgotmi
 #if BOOST_VERSION > 106100
 #include <boost/utility/string_view.hpp>
 using config_key_type = boost::string_view;
