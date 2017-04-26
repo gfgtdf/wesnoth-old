@@ -77,7 +77,7 @@ using config_key_type = boost::string_view;
 using config_key_type = boost::string_ref;
 #endif
 #else
-using config_key_type = const std::string &;
+#define config_key_type const std::string&
 #endif
 
 class config;
