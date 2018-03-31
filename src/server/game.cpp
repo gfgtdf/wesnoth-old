@@ -92,7 +92,7 @@ void game::missing_user(socket_ptr /*socket*/, const std::string& func) const
 }
 
 game::game(player_connections& player_connections,
-		const socket_ptr& host,
+		socket_ptr host,
 		const std::string& name,
 		bool save_replays,
 		const std::string& replay_save_path)
@@ -172,12 +172,12 @@ bool game::registered_users_only() const
 	return get_multiplayer(level_.root())["registered_users_only"].to_bool(true);
 }
 
-bool game::is_observer(const socket_ptr& player) const
+bool game::is_observer(const socket_ptr player) const
 {
 	return std::find(observers_.begin(), observers_.end(), player) != observers_.end();
 }
 
-bool game::is_muted_observer(const socket_ptr& player) const
+bool game::is_muted_observer(const socket_ptr player) const
 {
 	if(!is_observer(player)) {
 		return false;
@@ -190,7 +190,7 @@ bool game::is_muted_observer(const socket_ptr& player) const
 	return std::find(muted_observers_.begin(), muted_observers_.end(), player) != muted_observers_.end();
 }
 
-bool game::is_player(const socket_ptr& player) const
+bool game::is_player(const socket_ptr player) const
 {
 	return std::find(players_.begin(), players_.end(), player) != players_.end();
 }
@@ -291,7 +291,7 @@ void game::perform_controller_tweaks()
 	// not to send them at all, although not if it complicates the server code.
 }
 
-void game::start_game(const socket_ptr& starter)
+void game::start_game(const socket_ptr starter)
 {
 	const simple_wml::node::child_list& sides = get_sides_list();
 	DBG_GAME << "****\n Starting game. sides = " << std::endl;
@@ -397,7 +397,7 @@ bool game::send_taken_side(simple_wml::document& cfg, const simple_wml::node* si
 	return true;
 }
 
-bool game::take_side(const socket_ptr& user)
+bool game::take_side(const socket_ptr user)
 {
 	DBG_GAME << "take_side...\n";
 
@@ -521,7 +521,7 @@ void game::update_side_data()
 	DBG_GAME << debug_player_info();
 }
 
-void game::transfer_side_control(const socket_ptr& sock, const simple_wml::node& cfg)
+void game::transfer_side_control(const socket_ptr sock, const simple_wml::node& cfg)
 {
 	DBG_GAME << "transfer_side_control...\n";
 
@@ -545,7 +545,7 @@ void game::transfer_side_control(const socket_ptr& sock, const simple_wml::node&
 	}
 
 	const simple_wml::string_span& newplayer_name = cfg["player"];
-	const socket_ptr& old_player = sides_[side_num - 1];
+	const socket_ptr old_player = sides_[side_num - 1];
 	const auto oldplayer = player_connections_.find(old_player);
 	if(oldplayer == player_connections_.end()) {
 		missing_user(old_player, __func__);
@@ -618,7 +618,7 @@ void game::transfer_side_control(const socket_ptr& sock, const simple_wml::node&
 }
 
 void game::change_controller(
-		const size_t side_index, const socket_ptr& sock, const std::string& player_name, const bool player_left)
+		const size_t side_index, const socket_ptr sock, const std::string& player_name, const bool player_left)
 {
 	DBG_GAME << __func__ << "...\n";
 
@@ -701,7 +701,7 @@ bool game::describe_slots()
 	return true;
 }
 
-bool game::player_is_banned(const socket_ptr& sock) const
+bool game::player_is_banned(const socket_ptr sock) const
 {
 	auto ban = std::find(bans_.begin(), bans_.end(), client_address(sock));
 	return ban != bans_.end();
@@ -717,7 +717,7 @@ void game::mute_all_observers()
 	}
 }
 
-void game::send_muted_observers(const socket_ptr& user) const
+void game::send_muted_observers(const socket_ptr user) const
 {
 	if(all_observers_muted_) {
 		send_server_message("All observers are muted.", user);
@@ -729,7 +729,7 @@ void game::send_muted_observers(const socket_ptr& user) const
 	send_server_message("Muted observers: " + muted_nicks, user);
 }
 
-void game::mute_observer(const simple_wml::node& mute, const socket_ptr& muter)
+void game::mute_observer(const simple_wml::node& mute, const socket_ptr muter)
 {
 	if(muter != owner_) {
 		send_server_message("You cannot mute: not the game host.", muter);
@@ -742,7 +742,7 @@ void game::mute_observer(const simple_wml::node& mute, const socket_ptr& muter)
 		return;
 	}
 
-	const socket_ptr& user = find_user(username);
+	const socket_ptr user = find_user(username);
 
 	/**
 	 * @todo FIXME: Maybe rather save muted nicks as a set of strings and
@@ -771,7 +771,7 @@ void game::mute_observer(const simple_wml::node& mute, const socket_ptr& muter)
 	send_and_record_server_message(username.to_string() + " has been muted.");
 }
 
-void game::unmute_observer(const simple_wml::node& unmute, const socket_ptr& unmuter)
+void game::unmute_observer(const simple_wml::node& unmute, const socket_ptr unmuter)
 {
 	if(unmuter != owner_) {
 		send_server_message("You cannot unmute: not the game host.", unmuter);
@@ -785,7 +785,7 @@ void game::unmute_observer(const simple_wml::node& unmute, const socket_ptr& unm
 		return;
 	}
 
-	const socket_ptr& user = find_user(username);
+	const socket_ptr user = find_user(username);
 	if(!user || !is_observer(user)) {
 		send_server_message("Observer '" + username.to_string() + "' not found.", unmuter);
 		return;
@@ -803,13 +803,13 @@ void game::unmute_observer(const simple_wml::node& unmute, const socket_ptr& unm
 	send_and_record_server_message(username.to_string() + " has been unmuted.");
 }
 
-void game::send_leave_game(const socket_ptr& user) const
+void game::send_leave_game(socket_ptr user) const
 {
 	static simple_wml::document leave_game("[leave_game]\n[/leave_game]\n", simple_wml::INIT_COMPRESSED);
 	send_to_player(user, leave_game);
 }
 
-socket_ptr game::kick_member(const simple_wml::node& kick, const socket_ptr& kicker)
+socket_ptr game::kick_member(const simple_wml::node& kick, const socket_ptr kicker)
 {
 	if(kicker != owner_) {
 		send_server_message("You cannot kick: not the game host", kicker);
@@ -817,7 +817,7 @@ socket_ptr game::kick_member(const simple_wml::node& kick, const socket_ptr& kic
 	}
 
 	const simple_wml::string_span& username = kick["username"];
-	const socket_ptr& user = find_user(username);
+	const socket_ptr user = find_user(username);
 
 	if(!user || !is_member(user)) {
 		send_server_message("'" + username.to_string() + "' is not a member of this game.", kicker);
@@ -841,7 +841,7 @@ socket_ptr game::kick_member(const simple_wml::node& kick, const socket_ptr& kic
 	return user;
 }
 
-socket_ptr game::ban_user(const simple_wml::node& ban, const socket_ptr& banner)
+socket_ptr game::ban_user(const simple_wml::node& ban, const socket_ptr banner)
 {
 	if(banner != owner_) {
 		send_server_message("You cannot ban: not the game host", banner);
@@ -849,7 +849,7 @@ socket_ptr game::ban_user(const simple_wml::node& ban, const socket_ptr& banner)
 	}
 
 	const simple_wml::string_span& username = ban["username"];
-	const socket_ptr& user = find_user(username);
+	const socket_ptr user = find_user(username);
 
 	if(!user) {
 		send_server_message("User '" + username.to_string() + "' not found.", banner);
@@ -882,7 +882,7 @@ socket_ptr game::ban_user(const simple_wml::node& ban, const socket_ptr& banner)
 	return socket_ptr();
 }
 
-void game::unban_user(const simple_wml::node& unban, const socket_ptr& unbanner)
+void game::unban_user(const simple_wml::node& unban, const socket_ptr unbanner)
 {
 	if(unbanner != owner_) {
 		send_server_message("You cannot unban: not the game host.", unbanner);
@@ -890,7 +890,7 @@ void game::unban_user(const simple_wml::node& unban, const socket_ptr& unbanner)
 	}
 
 	const simple_wml::string_span& username = unban["username"];
-	const socket_ptr& user = find_user(username);
+	const socket_ptr user = find_user(username);
 
 	if(!user) {
 		send_server_message("User '" + username.to_string() + "' not found.", unbanner);
@@ -911,7 +911,7 @@ void game::unban_user(const simple_wml::node& unban, const socket_ptr& unbanner)
 	send_and_record_server_message(username.to_string() + " has been unbanned.");
 }
 
-void game::process_message(simple_wml::document& data, const socket_ptr& user)
+void game::process_message(simple_wml::document& data, const socket_ptr user)
 {
 	if(!owner_) {
 		ERR_GAME << "No owner in game::process_message" << std::endl;
@@ -927,7 +927,7 @@ void game::process_message(simple_wml::document& data, const socket_ptr& user)
 	send_data(data, user, "game message");
 }
 
-bool game::is_legal_command(const simple_wml::node& command, const socket_ptr& user)
+bool game::is_legal_command(const simple_wml::node& command, const socket_ptr user)
 {
 	const bool is_player = this->is_player(user);
 	const bool is_host = user == owner_;
@@ -992,7 +992,7 @@ bool game::is_legal_command(const simple_wml::node& command, const socket_ptr& u
 	return false;
 }
 
-bool game::process_turn(simple_wml::document& data, const socket_ptr& user)
+bool game::process_turn(simple_wml::document& data, const socket_ptr user)
 {
 	// DBG_GAME << "processing commands: '" << cfg << "'\n";
 	if(!started_) {
@@ -1225,7 +1225,7 @@ void game::handle_controller_choice(const simple_wml::node& req)
 	record_data(mdata);
 }
 
-void game::handle_choice(const simple_wml::node& data, const socket_ptr& user)
+void game::handle_choice(const simple_wml::node& data, const socket_ptr user)
 {
 	// note, that during end turn events, it's side=1 for the server but side= side_count() on the clients.
 
@@ -1259,7 +1259,7 @@ void game::handle_choice(const simple_wml::node& data, const socket_ptr& user)
 	}
 }
 
-void game::process_whiteboard(simple_wml::document& data, const socket_ptr& user)
+void game::process_whiteboard(simple_wml::document& data, const socket_ptr user)
 {
 	if(!started_ || !is_player(user)) {
 		return;
@@ -1286,7 +1286,7 @@ void game::process_whiteboard(simple_wml::document& data, const socket_ptr& user
 	send_data_sides(data, to_sides, user, "whiteboard");
 }
 
-void game::process_change_turns_wml(simple_wml::document& data, const socket_ptr& user)
+void game::process_change_turns_wml(simple_wml::document& data, const socket_ptr user)
 {
 	if(!started_ || !is_player(user)) {
 		return;
@@ -1365,7 +1365,7 @@ void game::update_turn_data()
 
 ///@todo differentiate between "observers not allowed" and "player already in the game" errors.
 //      maybe return a string with an error message.
-bool game::add_player(const socket_ptr& player, bool observer)
+bool game::add_player(const socket_ptr player, bool observer)
 {
 	if(is_member(player)) {
 		ERR_GAME << "ERROR: Player is already in this game. (socket: " << player << ")\n";
@@ -1449,7 +1449,7 @@ bool game::add_player(const socket_ptr& player, bool observer)
 	return true;
 }
 
-bool game::remove_player(const socket_ptr& player, const bool disconnect, const bool destruct)
+bool game::remove_player(const socket_ptr player, const bool disconnect, const bool destruct)
 {
 	if(!is_member(player)) {
 		ERR_GAME << "ERROR: User is not in this game. (socket: " << player << ")\n";
@@ -1558,7 +1558,7 @@ bool game::remove_player(const socket_ptr& player, const bool disconnect, const 
 	return false;
 }
 
-void game::send_user_list(const socket_ptr& exclude) const
+void game::send_user_list(const socket_ptr exclude) const
 {
 	// If the game hasn't started yet, then send all players a list of the users in the game.
 	if(started_ /*|| description_ == nullptr*/) {
@@ -1585,7 +1585,7 @@ void game::send_user_list(const socket_ptr& exclude) const
 	send_data(cfg, exclude);
 }
 
-void game::load_next_scenario(const socket_ptr& user)
+void game::load_next_scenario(const socket_ptr user)
 {
 	send_server_message_to_all(player_connections_.find(user)->info().name() + " advances to the next scenario", user);
 
@@ -1635,7 +1635,7 @@ void game::load_next_scenario(const socket_ptr& user)
 	send_observerjoins(user);
 }
 
-void game::send_data(simple_wml::document& data, const socket_ptr& exclude, std::string /*packet_type*/) const
+void game::send_data(simple_wml::document& data, const socket_ptr exclude, std::string /*packet_type*/) const
 {
 	send_to_players(data, all_game_users(), exclude);
 }
@@ -1662,7 +1662,7 @@ struct controls_side_helper
 
 void game::send_data_sides(simple_wml::document& data,
 		const simple_wml::string_span& sides,
-		const socket_ptr& exclude,
+		const socket_ptr exclude,
 		std::string /*packet_type*/) const
 {
 	std::vector<int> sides_vec = ::split<int>(sides, ::split_conv_impl());
@@ -1677,7 +1677,7 @@ void game::send_data_sides(simple_wml::document& data,
 	send_to_players(data, filtered_players, exclude);
 }
 
-bool game::controls_side(const std::vector<int>& sides, const socket_ptr& player) const
+bool game::controls_side(const std::vector<int>& sides, const socket_ptr player) const
 {
 	for(int side : sides) {
 		size_t side_index = side - 1;
@@ -1690,7 +1690,7 @@ bool game::controls_side(const std::vector<int>& sides, const socket_ptr& player
 	return false;
 }
 
-std::string game::has_same_ip(const socket_ptr& user, bool observer) const
+std::string game::has_same_ip(socket_ptr user, bool observer) const
 {
 	const user_vector users = observer ? players_ : all_game_users();
 	const std::string ip = client_address(user);
@@ -1709,7 +1709,7 @@ std::string game::has_same_ip(const socket_ptr& user, bool observer) const
 	return clones;
 }
 
-void game::send_observerjoins(const socket_ptr& sock) const
+void game::send_observerjoins(const socket_ptr sock) const
 {
 	for(const socket_ptr& ob : observers_) {
 		if(ob == sock) {
@@ -1729,7 +1729,7 @@ void game::send_observerjoins(const socket_ptr& sock) const
 	}
 }
 
-void game::send_observerquit(const socket_ptr& observer) const
+void game::send_observerquit(const socket_ptr observer) const
 {
 	simple_wml::document observer_quit;
 
@@ -1741,7 +1741,7 @@ void game::send_observerquit(const socket_ptr& observer) const
 	send_data(observer_quit, observer);
 }
 
-void game::send_history(const socket_ptr& socket) const
+void game::send_history(const socket_ptr socket) const
 {
 	if(history_.empty()) {
 		return;
@@ -1960,7 +1960,7 @@ socket_ptr game::find_user(const simple_wml::string_span& name)
 	}
 }
 
-void game::send_and_record_server_message(const char* message, const socket_ptr& exclude)
+void game::send_and_record_server_message(const char* message, const socket_ptr exclude)
 {
 	simple_wml::document* doc = new simple_wml::document;
 	send_server_message(message, socket_ptr(), doc);
@@ -1973,14 +1973,14 @@ void game::send_and_record_server_message(const char* message, const socket_ptr&
 	}
 }
 
-void game::send_server_message_to_all(const char* message, const socket_ptr& exclude) const
+void game::send_server_message_to_all(const char* message, socket_ptr exclude) const
 {
 	simple_wml::document doc;
 	send_server_message(message, socket_ptr(), &doc);
 	send_data(doc, exclude, "message");
 }
 
-void game::send_server_message(const char* message, const socket_ptr& sock, simple_wml::document* docptr) const
+void game::send_server_message(const char* message, socket_ptr sock, simple_wml::document* docptr) const
 {
 	simple_wml::document docbuf;
 	if(docptr == nullptr) {
