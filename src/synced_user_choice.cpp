@@ -430,8 +430,8 @@ namespace {
 	// What do you want to do?" dialog is shown.
 	static bool ucm_in_proccess = false;
 	struct ucm_process_scope {
-		process_scope() { ucm_in_proccess = true; }
-		~process_scope() { ucm_in_proccess = false; }
+		ucm_process_scope() { ucm_in_proccess = true; }
+		~ucm_process_scope() { ucm_in_proccess = false; }
 	};
 }
 void user_choice_manager::process(events::pump_info&)
