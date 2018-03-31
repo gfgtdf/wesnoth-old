@@ -195,7 +195,7 @@ bool game::is_player(const socket_ptr player) const
 	return std::find(players_.begin(), players_.end(), player) != players_.end();
 }
 
-std::string game::username(const socket_ptr& player) const
+std::string game::username(const socket_ptr pl) const
 {
 	const auto iter = player_connections_.find(player);
 	if(iter != player_connections_.end()) {
