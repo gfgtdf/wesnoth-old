@@ -772,6 +772,7 @@ void manager::erase_temp_move()
 
 void manager::save_temp_move()
 {
+	std::cerr << "save_temp_move()\n";
 	if (has_temp_move() && !executing_actions_ && !resources::controller->is_linger_mode())
 	{
 		side_actions& sa = *viewer_actions();
@@ -797,6 +798,7 @@ void manager::save_temp_move()
 			route.steps = move_arrow->get_path();
 			route.move_cost = path_cost(route.steps,*u);
 
+			std::cerr << "sa.queue_move\n";
 			sa.queue_move(turn, *u, route, move_arrow, std::move(fake_units_[i]));
 		}
 		erase_temp_move();

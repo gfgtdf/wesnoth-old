@@ -408,10 +408,10 @@ void side_actions::show()
 side_actions::iterator side_actions::insert_action(iterator position, action_ptr action)
 {
 	if(resources::whiteboard->has_planned_unit_map()) {
-		ERR_WB << "Modifying action queue while temp modifiers are applied!!!" << std::endl;
+		std::cerr << "Modifying action queue while temp modifiers are applied!!!" << std::endl;
 	}
 	iterator valid_position = synced_insert(position, action);
-	LOG_WB << "Inserted into turn #" << get_turn(valid_position) << " at position #"
+	std::cerr << "Inserted into turn #" << get_turn(valid_position) << " at position #"
 			<< actions_.position_in_turn(valid_position) << " : " << action <<"\n";
 	resources::whiteboard->validate_viewer_actions();
 	return valid_position;
@@ -420,10 +420,10 @@ side_actions::iterator side_actions::insert_action(iterator position, action_ptr
 side_actions::iterator side_actions::queue_action(size_t turn_num, action_ptr action)
 {
 	if(resources::whiteboard->has_planned_unit_map()) {
-		ERR_WB << "Modifying action queue while temp modifiers are applied!!!" << std::endl;
+		std::cerr << "Modifying action queue while temp modifiers are applied!!!" << std::endl;
 	}
 	iterator result = synced_enqueue(turn_num, action);
-	LOG_WB << "Queue into turn #" << turn_num << " : " << action <<"\n";
+	std::cerr << "Queue into turn #" << turn_num << " : " << action <<"\n";
 	resources::whiteboard->validate_viewer_actions();
 	return result;
 }
@@ -514,12 +514,12 @@ side_actions::iterator side_actions::bump_earlier(side_actions::iterator positio
 		}
 	}
 
-	LOG_WB << "Before bumping earlier, " << *this << "\n";
+	std::cerr << "Before bumping earlier, " << *this << "\n";
 
 	int turn_number = get_turn(position);
 	int action_number = actions_.position_in_turn(position);
 	int last_position = turn_size(turn_number) - 1;
-	LOG_WB << "In turn #" << turn_number
+	std::cerr << "In turn #" << turn_number
 			<< ", bumping action #" << action_number << "/" << last_position
 			<< " to position #" << action_number - 1  << "/" << last_position << ".\n";
 
@@ -527,7 +527,7 @@ side_actions::iterator side_actions::bump_earlier(side_actions::iterator positio
 
 	actions_.bump_earlier(position);
 
-	LOG_WB << "After bumping earlier, " << *this << "\n";
+	std::cerr << "After bumping earlier, " << *this << "\n";
 	return position - 1;
 }
 
@@ -555,7 +555,7 @@ side_actions::iterator side_actions::remove_action(side_actions::iterator positi
 
 	assert(position < end());
 
-	LOG_WB << "Erasing action at turn #" << get_turn(position) << " position #" << actions_.position_in_turn(position) << "\n";
+	std::cerr << "Erasing action at turn #" << get_turn(position) << " position #" << actions_.position_in_turn(position) << "\n";
 
 	position = synced_erase(position);
 

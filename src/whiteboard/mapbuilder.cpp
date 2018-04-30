@@ -115,6 +115,7 @@ void mapbuilder::build_map()
 
 void mapbuilder::process(side_actions &sa, side_actions::iterator action_it)
 {
+	std::cerr << "mapbuilder::process\n";
 	action_ptr action = *action_it;
 	bool acted=false;
 	unit_ptr unit = action->get_unit();
@@ -133,6 +134,7 @@ void mapbuilder::process(side_actions &sa, side_actions::iterator action_it)
 	action->redraw();
 
 	if(erval != action::OK) {
+		std::cerr << "mapbuilder::process erval != action::OK\n";
 		// We do not delete obstructed moves, nor invalid actions caused by obstructed moves.
 		if(has_invalid_actions_.find(unit.get()) == has_invalid_actions_.end()) {
 			if(erval == action::TOO_FAR || (erval == action::LOCATION_OCCUPIED && std::dynamic_pointer_cast<move>(action))) {
