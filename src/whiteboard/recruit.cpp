@@ -49,7 +49,7 @@ std::ostream& operator<<(std::ostream& s, recruit_const_ptr recruit)
 
 std::ostream& recruit::print(std::ostream &s) const
 {
-	s << "Recruiting " << unit_name_ << " on hex " << recruit_hex_;
+	s << "Recruiting " << unit_name_ << " on hex " << recruit_hex_ << " with id " << temp_unit_->id() << "(" << temp_unit_->underlying_id()  << ")";
 	return s;
 }
 
