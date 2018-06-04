@@ -260,7 +260,8 @@ void mp_lobby::update_gamelist()
 	SCOPE_LB;
 	gamelistbox_->clear();
 	gamelist_id_at_row_.clear();
-	lobby_info_.make_games_vector();
+	lobby_info_.sync_games_display_status();
+	lobby_info_.apply_game_filter();
 
 	int select_row = -1;
 	for(unsigned i = 0; i < lobby_info_.games().size(); ++i) {
@@ -284,8 +285,6 @@ void mp_lobby::update_gamelist()
 	update_selected_game();
 	gamelist_dirty_ = false;
 	last_lobby_update_ = SDL_GetTicks();
-	lobby_info_.sync_games_display_status();
-	lobby_info_.apply_game_filter();
 	update_gamelist_header();
 	gamelistbox_->set_row_shown(lobby_info_.games_visibility());
 }
@@ -842,9 +841,13 @@ void mp_lobby::post_show(window& /*window*/)
 void mp_lobby::network_handler()
 {
 	try {
-		config data;
-		if (network_connection_.receive_data(data)) {
-			process_network_data(data);
+		bool read_more = true;
+		while(read_more) {
+			config data;
+			if (network_connection_.receive_data(data)) {
+				read_more = data.has_child("gamelist") || data.has_child("gamelist_diff");			
+				process_network_data(data);
+			}
 		}
 	} catch (const wesnothd_error& e) {
 		LOG_LB << "caught wesnothd_error in network_handler: " << e.message << "\n";
