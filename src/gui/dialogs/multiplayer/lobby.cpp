@@ -843,6 +843,7 @@ void mp_lobby::network_handler()
 	try {
 		bool read_more = true;
 		while(read_more) {
+			read_more = false;
 			config data;
 			if (network_connection_.receive_data(data)) {
 				read_more = data.has_child("gamelist") || data.has_child("gamelist_diff");			
