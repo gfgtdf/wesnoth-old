@@ -25,7 +25,7 @@ class config;
 
 class mapgen_lua_kernel : public lua_kernel_base {
 public:
-	mapgen_lua_kernel();
+	mapgen_lua_kernel(const config* vars);
 
 	virtual std::string my_name() { return "Mapgen Lua Kernel"; }
 
@@ -39,4 +39,5 @@ private:
 	void run_generator(const char * prog, const config & generator);
 	boost::optional<uint32_t> random_seed_;
 	boost::optional<std::mt19937> default_rng_;
+	const config* ;
 };
