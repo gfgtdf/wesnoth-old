@@ -37,7 +37,8 @@ public:
 	std::mt19937& get_default_rng();
 private:
 	void run_generator(const char * prog, const config & generator);
+	int intf_get_variable(lua_State *L);
 	boost::optional<uint32_t> random_seed_;
 	boost::optional<std::mt19937> default_rng_;
-	const config* ;
+	const config* vars_;
 };
