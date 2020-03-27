@@ -50,6 +50,11 @@ public:
 
 	static game_config_manager * get();
 
+
+	static const_child_itors child_range(config_key_type key) const;
+	static const config& find_child(config_key_type key, const std::string &name, const std::string &value) const;
+	static const config& child(config_key_type key) const;
+
 private:
 	game_config_manager(const game_config_manager&);
 	void operator=(const game_config_manager&);

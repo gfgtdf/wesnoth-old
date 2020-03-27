@@ -667,3 +667,27 @@ void game_config_manager::load_game_config_for_create(bool is_mp, bool is_test)
 		throw;
 	}
 }
+
+
+const_child_itors game_config_manager::child_range(config_key_type key)
+{
+	auto self = game_config_manager::get();
+	assert(self);
+	return self->game_config_.child_range(key);
+}
+
+const config& game_config_manager::find_child(config_key_type key, const std::string &name, const std::string &value)
+{
+	auto self = game_config_manager::get();
+	assert(self);
+	return self->game_config_.find_child(key, name, value);
+
+}
+
+const config& game_config_manager::child(config_key_type key)
+{
+	auto self = game_config_manager::get();
+	assert(self);
+	return self->game_config_.find_child(key);
+
+}
