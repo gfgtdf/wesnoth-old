@@ -21,6 +21,10 @@
 
 class config;
 class game_classification;
+class game_config_view
+{
+
+};
 
 class game_config_manager
 {
