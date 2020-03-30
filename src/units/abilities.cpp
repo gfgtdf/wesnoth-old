@@ -491,7 +491,7 @@ get_ability_value_visitor<T, TFuncFormula> make_get_ability_value_visitor(T def,
 	return get_ability_value_visitor<T, TFuncFormula>(def, formula_handler);
 }
 template<typename T, typename TFuncFormula>
-T get_single_ability_value(const config::attribute_value& v, T def, const map_location& sender_loc, const map_location& receiver_loc, const TFuncFormula& formula_handler)
+T get_single_ability_value(const config::attribute_value& v, T def, const unit_ability& ability_info, const map_location& receiver_loc, const TFuncFormula& formula_handler)
 {
 	return v.apply_visitor(make_get_ability_value_visitor(def, [&](const std::string& s) {
 
@@ -505,9 +505,11 @@ T get_single_ability_value(const config::attribute_value& v, T def, const map_lo
 					return def;
 				}
 				wfl::map_formula_callable callable(std::make_shared<wfl::unit_callable>(*u_itor));
-				u_itor = units.find(receiver_loc);
-				if(u_itor != units.end()) {
-					callable.add("other", wfl::variant(std::make_shared<wfl::unit_callable>(*u_itor)));
+				if (auto uptr = unit.find_unit_ptr(ability_info.student_loc)) {
+					callable.add("student", wfl::variant(std::make_shared<wfl::unit_callable>(*uptr)));
+				}
+				if (auto uptr = unit.find_unit_ptr(receiver_loc)) {
+					callable.add("other", wfl::variant(std::make_shared<wfl::unit_callable>(*uptr)));
 				}
 				return formula_handler(wfl::formula(s, new wfl::gamestate_function_symbol_table), callable);
 			} catch(const wfl::formula_error& e) {
@@ -533,21 +535,21 @@ std::pair<int,map_location> unit_ability_list::get_extremum(const std::string& k
 	int stack = 0;
 	for (const unit_ability& p : cfgs_)
 	{
-		int value = get_single_ability_value((*p.first)[key], def, p.second, loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+		int value = get_single_ability_value((*p.ability_cfg)[key], def, p, loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 			return formula.evaluate(callable).as_int();
 		});
 
-		if ((*p.first)["cumulative"].to_bool()) {
+		if ((*p.ability_cfg)["cumulative"].to_bool()) {
 			stack += value;
 			if (value < 0) value = -value;
 			if (only_cumulative && !comp(value, abs_max)) {
 				abs_max = value;
-				best_loc = p.second;
+				best_loc = p.teacher_loc;
 			}
 		} else if (only_cumulative || comp(flat, value)) {
 			only_cumulative = false;
 			flat = value;
-			best_loc = p.second;
+			best_loc = p.teacher_loc;
 		}
 	}
 	return std::make_pair(flat + stack, best_loc);
@@ -748,7 +750,7 @@ unit_ability_list attack_type::get_specials(const std::string& special) const
 
 	for(const config& i : specials_.child_range(special)) {
 		if(special_active(i, AFFECT_SELF, special)) {
-			res.emplace_back(&i, loc);
+			res.emplace_back(&i, loc, loc);
 		}
 	}
 
@@ -948,8 +950,8 @@ void attack_type::modified_attacks(bool is_backstab, unsigned & min_attacks,
 	// Apply [swarm].
 	unit_ability_list swarm_specials = get_special_ability("swarm");
 	if ( !swarm_specials.empty() ) {
-		min_attacks = std::max<int>(0, swarm_specials.highest("swarm_attacks_min").first);
-		max_attacks = std::max<int>(0, swarm_specials.highest("swarm_attacks_max", attacks_value).first);
+		min_attacks = std::max<int>(0, swarm_specials.highest("swarm_attacks_min").ability_cfg);
+		max_attacks = std::max<int>(0, swarm_specials.highest("swarm_attacks_max", attacks_value).ability_cfg);
 	} else {
 		min_attacks = max_attacks = attacks_value;
 	}
@@ -1160,12 +1162,12 @@ static unit_ability_list list_leadership(const std::string& ability, unit_const_
 	for(unit_ability_list::iterator i = abil.begin(); i != abil.end();) {
 		bool abil_affect = false;//used for determine if abilities with special_affects_self or opponent must be erased of list
 		if(affect_other){
-			abil_affect = !special_affects_opponent((*i->first), attacker);
+			abil_affect = !special_affects_opponent((*i->ability_cfg), attacker);
 		} else {
-			abil_affect = !special_affects_self((*i->first), attacker);
+			abil_affect = !special_affects_self((*i->ability_cfg), attacker);
 		}
-		bool fighter_filter = !ability_apply_filter(un, up, ability, *i->first, loc, opp_loc, attacker, weapon, opp_weapon);
-		const std::string& active_on = (*i->first)["active_on"];
+		bool fighter_filter = !ability_apply_filter(un, up, ability, *i->ability_cfg, loc, opp_loc, attacker, weapon, opp_weapon);
+		const std::string& active_on = (*i->ability_cfg)["active_on"];
 		bool active_on_bool = !(active_on.empty() || (attacker && active_on == "offense") || (!attacker && active_on == "defense"));
 		if(active_on_bool || fighter_filter || abil_affect) {
 			i = abil.erase(i);
@@ -1433,7 +1435,7 @@ effect::effect(const unit_ability_list& list, int def, bool backstab) :
 	individual_effect set_effect_min;
 
 	for (const unit_ability & ability : list) {
-		const config& cfg = *ability.first;
+		const config& cfg = *ability.ability_cfg;
 		const std::string& effect_id = cfg[cfg["id"].empty() ? "name" : "id"];
 
 		if (!cfg["backstab"].blank()) {
@@ -1446,7 +1448,7 @@ effect::effect(const unit_ability_list& list, int def, bool backstab) :
 			continue;
 
 		if (const config::attribute_value *v = cfg.get("value")) {
-			int value = get_single_ability_value(*v, def, ability.second, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+			int value = get_single_ability_value(*v, def, ability, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 				callable.add("base_value", wfl::variant(def));
 				return formula.evaluate(callable).as_int();
 			});
@@ -1454,51 +1456,51 @@ effect::effect(const unit_ability_list& list, int def, bool backstab) :
 			int value_cum = cfg["cumulative"].to_bool() ? std::max(def, value) : value;
 			assert((set_effect_min.type != NOT_USED) == (set_effect_max.type != NOT_USED));
 			if(set_effect_min.type == NOT_USED) {
-				set_effect_min.set(SET, value_cum, ability.first, ability.second);
-				set_effect_max.set(SET, value_cum, ability.first, ability.second);
+				set_effect_min.set(SET, value_cum, ability.ability_cfg, ability.teacher_loc);
+				set_effect_max.set(SET, value_cum, ability.ability_cfg, ability.teacher_loc);
 			}
 			else {
 				if(value_cum > set_effect_max.value) {
-					set_effect_max.set(SET, value_cum, ability.first, ability.second);
+					set_effect_max.set(SET, value_cum, ability.ability_cfg, ability.teacher_loc);
 				}
 				if(value_cum < set_effect_min.value) {
-					set_effect_min.set(SET, value_cum, ability.first, ability.second);
+					set_effect_min.set(SET, value_cum, ability.ability_cfg, ability.teacher_loc);
 				}
 			}
 		}
 
 		if (const config::attribute_value *v = cfg.get("add")) {
-			int add = get_single_ability_value(*v, def, ability.second, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+			int add = get_single_ability_value(*v, def, ability, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 				callable.add("base_value", wfl::variant(def));
 				return formula.evaluate(callable).as_int();
 			});
 			std::map<std::string,individual_effect>::iterator add_effect = values_add.find(effect_id);
 			if(add_effect == values_add.end() || add > add_effect->second.value) {
-				values_add[effect_id].set(ADD, add, ability.first, ability.second);
+				values_add[effect_id].set(ADD, add, ability.ability_cfg, ability.teacher_loc);
 			}
 		}
 		if (const config::attribute_value *v = cfg.get("sub")) {
-			int sub = - get_single_ability_value(*v, def, ability.second, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+			int sub = - get_single_ability_value(*v, def, ability, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 				callable.add("base_value", wfl::variant(def));
 				return formula.evaluate(callable).as_int();
 			});
 			std::map<std::string,individual_effect>::iterator sub_effect = values_add.find(effect_id);
 			if(sub_effect == values_add.end() || sub < sub_effect->second.value) {
-				values_add[effect_id].set(ADD, sub, ability.first, ability.second);
+				values_add[effect_id].set(ADD, sub, ability.ability_cfg, ability.teacher_loc);
 			}
 		}
 		if (const config::attribute_value *v = cfg.get("multiply")) {
-			int multiply = static_cast<int>(get_single_ability_value(*v, static_cast<double>(def), ability.second, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+			int multiply = static_cast<int>(get_single_ability_value(*v, static_cast<double>(def), ability, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 				callable.add("base_value", wfl::variant(def));
 				return formula.evaluate(callable).as_decimal() / 1000.0 ;
 			}) * 100);
 			std::map<std::string,individual_effect>::iterator mul_effect = values_mul.find(effect_id);
 			if(mul_effect == values_mul.end() || multiply > mul_effect->second.value) {
-				values_mul[effect_id].set(MUL, multiply, ability.first, ability.second);
+				values_mul[effect_id].set(MUL, multiply, ability.ability_cfg, ability.teacher_loc);
 			}
 		}
 		if (const config::attribute_value *v = cfg.get("divide")) {
-			int divide = static_cast<int>(get_single_ability_value(*v, static_cast<double>(def), ability.second, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
+			int divide = static_cast<int>(get_single_ability_value(*v, static_cast<double>(def), ability, list.loc(),[&](const wfl::formula& formula, wfl::map_formula_callable& callable) {
 				callable.add("base_value", wfl::variant(def));
 				return formula.evaluate(callable).as_decimal() / 1000.0 ;
 			}) * 100);
@@ -1509,7 +1511,7 @@ effect::effect(const unit_ability_list& list, int def, bool backstab) :
 			else {
 				std::map<std::string,individual_effect>::iterator div_effect = values_div.find(effect_id);
 				if(div_effect == values_div.end() || divide > div_effect->second.value) {
-					values_div[effect_id].set(DIV, divide, ability.first, ability.second);
+					values_div[effect_id].set(DIV, divide, ability.ability_cfg, ability.teacher_loc);
 				}
 			}
 		}
