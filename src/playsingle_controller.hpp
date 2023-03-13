@@ -52,6 +52,7 @@ public:
 
 	void end_turn();
 	void force_end_turn() override;
+	void require_end_turn();
 
 	class hotkey_handler;
 	std::string describe_result() const;
@@ -86,17 +87,9 @@ protected:
 	playturn_network_adapter network_reader_;
 	/// Helper to read and execute (in particular replay data/ user actions ) messsages from the server
 	turn_info turn_data_;
-	enum END_TURN_STATE
-	{
-		/** The turn was not ended yet */
-		END_TURN_NONE,
-		/** And endturn was required eigher by the player, by the ai or by [end_turn] */
-		END_TURN_REQUIRED,
-		/** An [end_turn] was added to the replay. */
-		END_TURN_SYNCED,
-	};
-	
-	END_TURN_STATE end_turn_;
+	/// true iff the user has pressed the end turn button this turn.
+	/// (or wants to end linger mode, which is implemented via the same button)
+	bool end_turn_requested_;
 	/// A hack to make [endturn] work in start events. I think we should get rid of this and move the hacky part to lua.
 	bool skip_next_turn_;
 	/// true when the current side is actually an ai side but was taken over by a human (usually for debugging puposes),
