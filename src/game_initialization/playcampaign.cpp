@@ -205,7 +205,7 @@ level_result::type campaign_controller::play_game()
 		// If there is no next scenario we're done now.
 		if(state_.get_scenario_id().empty()) {
 			// Don't show The End for multiplayer scenarios.
-			if(res == level_result::type::victory && !state_.classification().is_normal_mp_game()) {
+			if(!state_.classification().is_normal_mp_game()) {
 				preferences::add_completed_campaign(
 					state_.classification().campaign, state_.classification().difficulty);
 
