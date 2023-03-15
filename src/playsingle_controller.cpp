@@ -204,6 +204,7 @@ void playsingle_controller::play_some()
 
 	if (!is_regular_game_end() && gamestate().in_phase(game_data::TURN_STARTING_WAITING, game_data::TURN_PLAYING)) {
 		if(gamestate().in_phase(game_data::TURN_PLAYING)) {
+			// If we are here we have probably reloaded a savegame
 			init_side_end();
 		}
 		play_side();
