@@ -87,6 +87,8 @@ private:
 	};
 	std::optional<REPLAY_VISION> vision_;
 	std::shared_ptr<config> reset_state_;
+	
 	std::function<void()> on_end_replay_;
+	/// Used by unit tests.
 	bool return_to_play_side_;
 };
