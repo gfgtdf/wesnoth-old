@@ -36,9 +36,9 @@ double heuristic(const map_location& src, const map_location& dst)
 	// based on how the path looks on the screen.
 
 	// 0.75 comes from the horizontal hex imbrication
-	double xdiff = (src.x - dst.x) * 0.75;
+	double xdiff = (src.wml_x() - dst.wml_x()) * 0.75;
 	// we must add 0.5 to the y coordinate when x is odd
-	double ydiff = (src.y - dst.y) + ((src.x & 1) - (dst.x & 1)) * 0.5;
+	double ydiff = (src.wml_y() - dst.wml_y()) + ((src.inner_x() & 1) - (dst.inner_x() & 1)) * 0.5;
 
 	// we assume a map with a maximum diagonal of 300 (bigger than a 200x200)
 	// and we divide by 90000 * 10000 to avoid interfering with the defense subcost

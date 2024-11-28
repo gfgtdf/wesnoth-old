@@ -556,23 +556,17 @@ DEFINE_FAI_FUNCTION(suitable_keep, 1, 1)
 DEFINE_FAI_FUNCTION(find_shroud, 0, 1)
 {
 	std::vector<variant> vars;
-	int w,h;
-
+	const gamemap* m = nullptr;
 	if(args().size()==1) {
-		const gamemap& m = args()[0]->evaluate(variables, add_debug_info(fdb, 0, "find_shroud:gamemap")).convert_to<gamemap_callable>()->get_gamemap();
-		w = m.w();
-		h = m.h();
+		m = &args()[0]->evaluate(variables, add_debug_info(fdb, 0, "find_shroud:gamemap")).convert_to<gamemap_callable>()->get_gamemap();
 	} else {
-		w = resources::gameboard->map().w();
-		h = resources::gameboard->map().h();
+		m = &resources::gameboard->map();
 	}
-
-	for(int i = 0; i < w; ++i)
-		for(int j = 0; j < h; ++j) {
-			if(ai_.current_team().shrouded(map_location(i,j)))
-				vars.emplace_back(std::make_shared<location_callable>(map_location(i, j)));
+	m->for_each_walkable_loc([&](const map_location& loc) {
+		if(ai_.current_team().shrouded(loc)) {
+			vars.emplace_back(std::make_shared<location_callable>(loc));
 		}
-
+	});
 	return variant(vars);
 }
 

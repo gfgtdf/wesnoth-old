@@ -246,20 +246,20 @@ bool shroud_clearer::clear_loc(team &tm, const map_location &loc,
 			// lower- right corner (depending on the width).
 
 			// Lower-left corner:
-			if ( loc.x == 0  &&  loc.y == map.h()-1 ) {
-				const map_location corner(-1, map.h());
+			if(loc.wml_x() == 1 && loc.wml_y() == map.h()) {
+				const map_location corner(0, map.h()+ 1. wml_loc());
 				tm.clear_shroud(corner);
 				tm.clear_fog(corner);
 			}
 			// Lower-right corner, odd width:
-			else if ( is_odd(map.w())  &&  loc.x == map.w()-1  &&  loc.y == map.h()-1 ) {
-				const map_location corner(map.w(), map.h());
+			else if(is_odd(map.w()) && loc.wml_x() == map.w() && loc.wml_y() == map.h()) {
+				const map_location corner(map.w() + 1, map.h() + 1, wml_loc());
 				tm.clear_shroud(corner);
 				tm.clear_fog(corner);
 			}
 			// Upper-right corner, even width:
-			else if ( is_even(map.w())  &&  loc.x == map.w()-1  &&  loc.y == 0) {
-				const map_location corner(map.w(), -1);
+			else if(is_even(map.w()) && loc.wml_x() == map.w() && loc.wml_y() == 1) {
+				const map_location corner(map.w() + 1, 0, wml_loc());
 				tm.clear_shroud(corner);
 				tm.clear_fog(corner);
 			}

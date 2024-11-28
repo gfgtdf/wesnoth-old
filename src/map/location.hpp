@@ -183,8 +183,17 @@ struct map_location {
 	int wml_x() const { return x + 1; }
 	int wml_y() const { return y + 1; }
 
+	int inner_x() const { return wml_x() - 1; }
+	int inner_y() const { return wml_y() - 1; }
+
 	void set_wml_x(int v) { x = v - 1; }
 	void set_wml_y(int v) { y = v - 1; }
+
+	//sets the Value of x assuming that the (0,0) coordinate is the first "walkable" tile
+	// The long term plan is to use this over plain .x/.y so that at some point we can make the switch 
+	// so that x/y can correspond to the wml format.
+	void set_inner_x(int v) { x = v; }
+	void set_inner_y(int v) { y = v; }
 	//on purpose these functions don't take map_location objects, if you use map_location objects to store 'differences' between 2 locations use vector_sum().
 	void add(int x_diff, int y_diff) { x += x_diff; y += y_diff; }
 	map_location plus(int x_diff, int y_diff) const { return map_location(x + x_diff, y + y_diff); }

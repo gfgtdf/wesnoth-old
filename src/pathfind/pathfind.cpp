@@ -976,7 +976,7 @@ std::pair<int, int> full_cost_map::get_pair_at(map_location loc) const
 		return std::pair(-1, 0);  // invalid
 	}
 
-	return cost_map[loc.x + (loc.y * map.w())];
+	return cost_map[loc.inner_x() + (loc.inner_y() * map.w())];
 }
 
 /**

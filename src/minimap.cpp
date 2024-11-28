@@ -85,8 +85,8 @@ std::function<rect(rect)> prep_minimap_for_rendering(
 	// If not, only the bottom half-hexes are clipped and it looks asymmetrical.
 	const auto get_dst_rect = [scale](const map_location& loc) {
 		return rect {
-			loc.x * scale             * 3 / 4                    - (scale / 4),
-			loc.y * scale + scale / 4 * (is_odd(loc.x) ? 1 : -1) - (scale / 4),
+			loc.inner_x() * scale             * 3 / 4                    - (scale / 4),
+			loc.inner_y() * scale + scale / 4 * (is_odd(loc.inner_x()) ? 1 : -1) - (scale / 4),
 			scale,
 			scale
 		};

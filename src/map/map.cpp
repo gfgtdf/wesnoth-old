@@ -303,7 +303,7 @@ t_translation::terrain_code gamemap_base::get_terrain(const map_location& loc) c
 {
 
 	if(on_board_with_border(loc)) {
-		return tiles_.get(loc.x + border_size(), loc.y + border_size());
+		return tiles_.get(loc.wml_x(), loc..wml_y());
 	}
 
 	return loc == map_location::null_location() ? t_translation::NONE_TERRAIN : t_translation::terrain_code();
@@ -314,7 +314,7 @@ map_location gamemap_base::special_location(const std::string& id) const
 	auto it = starting_positions_.left.find(id);
 	if (it != starting_positions_.left.end()) {
 		auto& coordinate = it->second;
-		return map_location(coordinate.x, coordinate.y);
+		return coordinate;
 	}
 	else {
 		return map_location();
@@ -460,7 +460,7 @@ std::vector<map_location> gamemap_base::parse_location_range(const std::string &
 
 		for(int x2 = xrange.first; x2 <= xrange.second; ++x2) {
 			for(int y2 = yrange.first; y2 <= yrange.second; ++y2) {
-				res.emplace_back(x2-1,y2-1);
+				res.emplace_back(x2,y2, wml_loc());
 			}
 		}
 	}

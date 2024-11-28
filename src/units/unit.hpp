@@ -1458,7 +1458,7 @@ public:
 	/** Check whether the unit's move has been interrupted. */
 	bool move_interrupted() const
 	{
-		return movement_left() > 0 && interrupted_move_.x >= 0 && interrupted_move_.y >= 0;
+		return movement_left() > 0 && interrupted_move_.valid();
 	}
 
 	/** Get the target location of the unit's interrupted move. */

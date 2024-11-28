@@ -337,7 +337,7 @@ void cave_map_generator::cave_map_generator_job::place_passage(const passage& p)
 void cave_map_generator::cave_map_generator_job::set_terrain(map_location loc, const t_translation::terrain_code & t)
 {
 	if (params.on_board(loc)) {
-		t_translation::terrain_code& c = map_.get(loc.x + gamemap::default_border, loc.y + gamemap::default_border);
+		t_translation::terrain_code& c = map_.get(loc.wml_x(), loc.wml_y());
 
 		if(c == params.clear_ || c == params.wall_ || c == params.village_) {
 			// Change this terrain.
