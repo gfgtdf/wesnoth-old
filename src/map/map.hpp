@@ -219,13 +219,13 @@ public:
 
 	const t_translation::terrain_code operator[](const map_location& loc) const
 	{
-		return tiles().get(loc.x + border_size(), loc.y + border_size());
+		return tiles()[loc];
 	}
 private:
 	//private method, use set_terrain instead which also updates villages_.
 	t_translation::terrain_code& operator[](const map_location& loc)
 	{
-		return tiles().get(loc.x + border_size(), loc.y + border_size());
+		return tiles()[loc];
 	}
 public:
 	void set_terrain(const map_location& loc, const terrain_code & terrain, const terrain_type_data::merge_mode mode = terrain_type_data::BOTH, bool replace_if_failed = false) override;

@@ -297,7 +297,7 @@ private:
 double passage_path_calculator::cost(const map_location& loc, const double) const
 {
 	double res = 1.0;
-	if (map_.get(loc.x + gamemap::default_border, loc.y + gamemap::default_border) == wall_) {
+	if (map_[loc] == wall_) {
 		res = laziness_;
 	}
 

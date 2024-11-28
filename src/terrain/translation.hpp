@@ -74,27 +74,52 @@ namespace t_translation {
 
 	// operator<< is defined later
 
-	typedef std::vector<terrain_code> ter_list;
-	struct ter_map {
+	/**  Contains an x and y coordinate used for starting positions in maps. */
+	using coordinate = map_location;
+	using ter_list = std::vector<terrain_code>;
 
-		ter_map() = default;
-		ter_map(const ter_map&) = default;
-		ter_map(ter_map&&) = default;
+	template<typename T>
+	struct basic_ter_map
+	{
+		basic_ter_map() = default;
+		basic_ter_map(const basic_ter_map&) = default;
+		basic_ter_map(basic_ter_map&&) = default;
 
-		ter_map(int w, int h, terrain_code fill = terrain_code()) : data(static_cast<size_t>(w) * h, fill), w(w), h(h) {}
+		basic_ter_map(int w, int h, T fill = T())
+			: data(static_cast<size_t>(w) * h, fill)
+			, w(w)
+			, h(h)
+		{
+		}
 
-		ter_map & operator= (const ter_map &) = default;
-		ter_map & operator= (ter_map &&) = default;
+		basic_ter_map& operator=(const basic_ter_map&) = default;
+		basic_ter_map& operator=(basic_ter_map&&) = default;
 
-		terrain_code& get(int x, int y) { std::size_t index = static_cast<size_t>(x) * h + y; return data.at(index); }
-		const terrain_code& get(int x, int y) const { std::size_t index = static_cast<size_t>(x) * h + y; return data.at(index); }
 
-		std::vector<terrain_code> data;
-		int w;
-		int h;
-		std::vector<terrain_code>::iterator operator[](int x) { return data.begin() + static_cast<size_t>(h) * x; }
-		std::vector<terrain_code>::const_iterator operator[](int x) const { return data.begin() + static_cast<size_t>(h) * x; }
+		std::vector<T> data;
+		int w = 0;
+		int h = 0;
+
+		T& get(int x, int y) { std::size_t index = static_cast<size_t>(x) * h + y; return data.at(index); }
+		const T& get(int x, int y) const { std::size_t index = static_cast<size_t>(x) * h + y; return data.at(index); }
+
+		std::vector<T>::iterator operator[](int x) { return data.begin() + static_cast<size_t>(h) * x; }
+		std::vector<T>::const_iterator operator[](int x) const { return data.begin() + static_cast<size_t>(h) * x; }
+
+		T& operator[](coordinate c) { return this->get(c.wml_x(), c.wml_y()); }
+		const T& operator[](coordinate c) const { return this->get(c.wml_x(), c.wml_y()); }
+
+		bool on_map(coordinate c) const
+		{
+			return c.wml_x() >= 0 && c.wml_x() < w && c.wml_y() >= 0 && c.wml_y() < h;
+		}
+		bool on_inner_map(coordinate c, int border) const
+		{
+			return c.wml_x() >= border && c.wml_x() < (w - border) && c.wml_y() >= border && c.wml_y() < (h - border);
+		}
 	};
+
+	using ter_map = basic_ter_map<terrain_code>;
 
 	/**
 	 * This structure can be used for matching terrain strings.
@@ -112,9 +137,6 @@ namespace t_translation {
 		bool has_wildcard;
 		bool is_empty;
 	};
-
-	/**  Contains an x and y coordinate used for starting positions in maps. */
-	using coordinate = map_location;
 
 	// Exception thrown if there's an error with the terrain.
 	// Note: atm most thrown result in a crash, but I like
