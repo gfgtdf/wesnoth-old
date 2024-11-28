@@ -249,7 +249,7 @@ std::vector<target> default_ai_context_impl::find_targets(const move_map& enemy_
 			if(i->loc == j->loc) {
 				continue;
 			}
-
+			//todowmlloc
 			const double distance = std::abs(j->loc.x - i->loc.x) +
 						std::abs(j->loc.y - i->loc.y);
 			new_values.back() += j->value/(distance*distance);

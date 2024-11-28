@@ -705,7 +705,7 @@ map_location display::minimap_location_on(int x, int y)
 	// is not pixel precise.
 	int px = (x - minimap_location_.x) * context().map().w() * hex_width() / std::max(minimap_location_.w, 1);
 	int py = (y - minimap_location_.y) * context().map().h() * hex_size() / std::max(minimap_location_.h, 1);
-
+	// todowmlloc
 	map_location loc = pixel_position_to_hex(px, py);
 	if(loc.x < 0) {
 		loc.x = 0;
@@ -1243,7 +1243,7 @@ uint32_t generate_hex_key(const drawing_layer layer, const map_location& loc)
 	// then the row containing all the even x. Since thus the least significant bit of x is
 	// not required for x ordering anymore it can be shifted out to the right.
 	const uint32_t x_parity = static_cast<uint32_t>(loc.x) & 1;
-
+	// todowmlloc
 	uint32_t key = 0;
 	static_assert(SHIFT_LAYER_GROUP + BITS_FOR_LAYER_GROUP == sizeof(key) * 8, "Bit field too small");
 
@@ -1680,6 +1680,7 @@ void display::draw_minimap_units()
 			col = game_config::color_info(orb_status_helper::get_orb_color(status)).rep();
 		}
 
+		// todowmlloc
 		double u_x = u.get_location().x * xscaling;
 		double u_y = (u.get_location().y + (is_odd(u.get_location().x) ? 1 : -1)/4.0) * yscaling;
 		// use 4/3 to compensate the horizontal hexes imbrication
@@ -2686,6 +2687,7 @@ void display::draw_hex(const map_location& loc)
 
 	if(is_shrouded || fogged(loc)) {
 		// TODO: better noise function
+		// todowmlloc
 		const auto get_variant = [&loc](const std::vector<std::string>& variants) -> const auto& {
 			return variants[std::abs(loc.x + loc.y) % variants.size()];
 		};

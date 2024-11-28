@@ -105,6 +105,7 @@ display_context::can_move_result display_context::unit_can_move(const unit& u) c
 					// Adjust for hex grid
 					int adjusted_dy = dy + floor(dx / 2.0);
 
+					// todowmlloc
 					map_location locs(u.get_location().x + dx, u.get_location().y + adjusted_dy);
 					int distance = distance_between(u.get_location(), locs);
 
