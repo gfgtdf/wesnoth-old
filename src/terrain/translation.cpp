@@ -288,7 +288,7 @@ static std::pair<int, int> get_map_size(const char* begin, const char* end)
 	return{ w, h };
 }
 
-ter_map read_game_map(std::string_view str, starting_positions& starting_positions, coordinate border_offset)
+ter_map read_game_map(std::string_view str, starting_positions& starting_positions)
 {
 	std::size_t offset = 0;
 	int x = 0, y = 0, width = 0;
@@ -323,7 +323,7 @@ ter_map read_game_map(std::string_view str, starting_positions& starting_positio
 			if (starting_positions.left.find(starting_position) != starting_positions.left.end()) {
 				WRN_G << "Starting position " << starting_position << " is redefined.";
 			}
-			starting_positions.insert(starting_positions::value_type(starting_position, coordinate(x - border_offset.x, y - border_offset.y)));
+			starting_positions.insert(starting_positions::value_type(starting_position, coordinate(x, y, wml_loc())));
 		}
 
 		if(result.w <= x || result.h <= y) {
@@ -386,7 +386,7 @@ ter_map read_game_map(std::string_view str, starting_positions& starting_positio
 	return result;
 }
 
-std::string write_game_map(const ter_map& map, const starting_positions& starting_positions, coordinate border_offset)
+std::string write_game_map(const ter_map& map, const starting_positions& starting_positions)
 {
 	std::stringstream str;
 
@@ -399,7 +399,7 @@ std::string write_game_map(const ter_map& map, const starting_positions& startin
 			// so the location is removed from the map.
 			std::vector<std::string> sp;
 
-			for(const auto& pair : starting_positions.right.equal_range(coordinate(x - border_offset.x, y - border_offset.y))) {
+			for(const auto& pair : starting_positions.right.equal_range(coordinate(x, y, wml_loc()))) {
 				sp.push_back(pair.second);
 			}
 			// Add the separator

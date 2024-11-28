@@ -107,7 +107,7 @@ mapgen_gamemap::mapgen_gamemap(std::string_view s)
 	}
 	//throws t_translation::error
 	//todo: make read_game_map take a string_view
-	tiles() = t_translation::read_game_map(s, special_locations(), t_translation::coordinate{ 1, 1 });
+	tiles() = t_translation::read_game_map(s, special_locations());
 }
 
 mapgen_gamemap::mapgen_gamemap(int w, int h, terrain_code t)

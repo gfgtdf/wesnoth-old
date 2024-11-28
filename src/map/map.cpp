@@ -145,7 +145,7 @@ void gamemap::read(const std::string& data, const bool allow_invalid)
 	const std::string& data_only = std::string(data, offset);
 
 	try {
-		tiles() = t_translation::read_game_map(data_only, special_locations(), t_translation::coordinate{ border_size(), border_size() });
+		tiles() = t_translation::read_game_map(data_only, special_locations());
 
 	} catch(const t_translation::error& e) {
 		// We re-throw the error but as map error.
@@ -156,28 +156,23 @@ void gamemap::read(const std::string& data, const bool allow_invalid)
 	// Post processing on the map
 	VALIDATE((total_width() >= 1 && total_height() >= 1), "A map needs at least 1 tile, the map cannot be loaded.");
 
-	for(int x = 0; x < total_width(); ++x) {
-		for(int y = 0; y < total_height(); ++y) {
-
-			// Is the terrain valid?
-			t_translation::terrain_code t = tiles().get(x, y);
-			if(tdata_->map().count(t) == 0) {
-				if(!tdata_->is_known(t)) {
-					std::stringstream ss;
-					ss << "Unknown tile in map: (" << t_translation::write_terrain_code(t)
-						   << ") '" << t << "'";
-					throw incorrect_map_format_error(ss.str().c_str());
-				}
-			}
-
-			// Is it a village?
-			if(x >= border_size() && y >= border_size()
-					&& x < total_width()- border_size() && y < total_height()- border_size()
-					&& tdata_->is_village(tiles().get(x, y))) {
-				villages_.push_back(map_location(x - border_size(), y - border_size()));
+	for_each_loc([&](map_location loc) {
+		// Is the terrain valid?
+		t_translation::terrain_code t = tiles()[loc];
+		if(tdata_->map().count(t) == 0) {
+			if(!tdata_->is_known(t)) {
+				std::stringstream ss;
+				ss << "Unknown tile in map: (" << t_translation::write_terrain_code(t) << ") '" << t << "'";
+				throw incorrect_map_format_error(ss.str().c_str());
 			}
 		}
-	}
+
+		// Is it a village?
+
+		if(on_board(loc) && &&tdata_->is_village(tiles().get(x, y))) {
+			villages_.push_back();
+		}
+	});
 }
 
 int gamemap::read_header(const std::string& data)
@@ -209,7 +204,7 @@ int gamemap::read_header(const std::string& data)
 
 std::string gamemap::write() const
 {
-	return t_translation::write_game_map(tiles(), special_locations(), t_translation::coordinate{ border_size(), border_size() }) + "\n";
+	return t_translation::write_game_map(tiles(), special_locations()) + "\n";
 }
 
 void gamemap_base::overlay(const gamemap_base& m, map_location loc, const std::vector<overlay_rule>& rules, bool m_is_odd, bool ignore_special_locations)
@@ -384,14 +379,13 @@ void gamemap_base::set_starting_position(int side, const map_location& loc)
 
 bool gamemap_base::on_board(const map_location& loc) const
 {
-	return loc.valid() && loc.x < w() && loc.y < h();
+	return loc.valid() && loc.wml_x() < w() + 1 && loc.wml_y() < h() + 1;
 }
 
 bool gamemap_base::on_board_with_border(const map_location& loc) const
 {
-	return !tiles_.data.empty()  &&  // tiles_ is not empty when initialized.
-	       loc.x >= -border_size() &&  loc.x < w() + border_size() &&
-	       loc.y >= -border_size() &&  loc.y < h() + border_size();
+	// tiles_ is not empty when initialized.
+	return !tiles_.data.empty() && tiles_.on_map(loc);
 }
 
 void gamemap::set_terrain(const map_location& loc, const t_translation::terrain_code & terrain, const terrain_type_data::merge_mode mode, bool replace_if_failed) {
@@ -469,7 +463,7 @@ std::vector<map_location> gamemap_base::parse_location_range(const std::string &
 
 std::string gamemap_base::to_string() const
 {
-	return t_translation::write_game_map(tiles_, starting_positions_, { 1, 1 }) + "\n";
+	return t_translation::write_game_map(tiles_, starting_positions_) + "\n";
 }
 
 const std::vector<map_location> gamemap_base::starting_positions() const {

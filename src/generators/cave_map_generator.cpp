@@ -354,11 +354,7 @@ void cave_map_generator::cave_map_generator_job::place_castle(int starting_posit
 {
 	if (starting_position != -1) {
 		set_terrain(loc, params.keep_);
-
-		t_translation::coordinate coord(
-				  loc.x + gamemap::default_border
-				, loc.y + gamemap::default_border);
-		starting_positions_.insert(t_translation::starting_positions::value_type(std::to_string(starting_position), coord));
+		starting_positions_.insert({ std::to_string(starting_position), loc) });
 	}
 
 	for(const map_location& adj : get_adjacent_tiles(loc)) {

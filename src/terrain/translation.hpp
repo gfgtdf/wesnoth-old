@@ -265,25 +265,23 @@ namespace t_translation {
 	 *					the last is stored. The returned value is a map:
 	 *					* first		the starting locations
 	 *					* second	a coordinate structure where the location was found
-	 * @param border_offset
 	 *
 	 * @returns			A 2D vector with the terrains found the vector data is stored
 	 *					like result[x][y] where x the column number is and y the row number.
 	 */
-	ter_map read_game_map(std::string_view str, starting_positions& positions, coordinate border_offset = coordinate{ 0, 0 });
+	ter_map read_game_map(std::string_view str, starting_positions& positions);
 
 	/**
 	 * Write a gamemap in to a vector string.
 	 *
 	 * @param map				 A terrain vector, as returned from read_game_map
 	 * @param positions A starting positions map, as returned from read_game_map
-	 * @param border_offset
 	 *
 	 * @returns			A terrain string which can be read with read_game_map.
 	 *					For readability the map is padded to groups of 12 chars,
 	 *					followed by a comma and space.
 	 */
-	std::string write_game_map(const ter_map& map, const starting_positions& positions = starting_positions(), coordinate border_offset = coordinate{ 0, 0 });
+	std::string write_game_map(const ter_map& map, const starting_positions& positions = starting_positions());
 
 	/**
 	 * Tests whether a specific terrain matches a list of expressions.
